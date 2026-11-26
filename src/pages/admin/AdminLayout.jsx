@@ -46,7 +46,12 @@ export default function AdminLayout() {
           ) : null}
           {podeUsar('eventos') ? <NavLink to="/admin/eventos" className={linkMenu}>Eventos</NavLink> : null}
           {podeUsar('noticias') ? <NavLink to="/admin/noticias" className={linkMenu}>Notícias</NavLink> : null}
+          {podeUsar('inicio') ? <NavLink to="/admin/inicio" className={linkMenu}>Página inicial e banners</NavLink> : null}
           {podeUsar('configuracoes') ? <NavLink to="/admin/sobre" className={linkMenu}>Página Sobre</NavLink> : null}
+          {podeUsar('configuracoes') ? <NavLink to="/admin/configuracoes" className={linkMenu}>Configurações</NavLink> : null}
+          {perfil.papel === 'admin' ? <NavLink to="/admin/usuarios" className={linkMenu}>Usuários e permissões</NavLink> : null}
+          {perfil.papel === 'admin' ? <NavLink to="/admin/historico" className={linkMenu}>Histórico</NavLink> : null}
+          {perfil.papel === 'admin' ? <NavLink to="/admin/backup" className={linkMenu}>Cópia de segurança</NavLink> : null}
         </nav>
         <div className="admin-conteudo">
           <Outlet />

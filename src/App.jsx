@@ -23,6 +23,11 @@ const LocalForm = lazy(() => import('./pages/admin/LocalForm.jsx'));
 const EditorMapa = lazy(() => import('./pages/admin/EditorMapa.jsx'));
 const Categorias = lazy(() => import('./pages/admin/Categorias.jsx'));
 const SobreAdmin = lazy(() => import('./pages/admin/Sobre.jsx'));
+const PaginaInicioAdmin = lazy(() => import('./pages/admin/PaginaInicio.jsx'));
+const Usuarios = lazy(() => import('./pages/admin/Usuarios.jsx'));
+const Historico = lazy(() => import('./pages/admin/Historico.jsx'));
+const Configuracoes = lazy(() => import('./pages/admin/Configuracoes.jsx'));
+const Backup = lazy(() => import('./pages/admin/Backup.jsx'));
 const EventosAdminLista = lazy(() => import('./pages/admin/ConteudoRotas.jsx').then((m) => ({ default: m.EventosAdminLista })));
 const EventosAdminForm = lazy(() => import('./pages/admin/ConteudoRotas.jsx').then((m) => ({ default: m.EventosAdminForm })));
 const NoticiasAdminLista = lazy(() => import('./pages/admin/ConteudoRotas.jsx').then((m) => ({ default: m.NoticiasAdminLista })));
@@ -68,6 +73,11 @@ export default function App() {
           <Route path="noticias/novo" element={<NoticiasAdminForm />} />
           <Route path="noticias/:id" element={<NoticiasAdminForm />} />
           <Route path="sobre" element={<SobreAdmin />} />
+          <Route path="inicio" element={<PaginaInicioAdmin />} />
+          <Route path="usuarios" element={<Usuarios />} />
+          <Route path="historico" element={<Historico />} />
+          <Route path="configuracoes" element={<Configuracoes />} />
+          <Route path="backup" element={<Backup />} />
         </Route>
 
         <Route path="*" element={<NaoEncontrado />} />

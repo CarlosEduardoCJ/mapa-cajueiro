@@ -8,6 +8,9 @@ export const CHAVE_IDIOMA = 'mc_lang'; // nome da chave no localStorage (escolha
 export const TEXTOS = {
   pt: {
     semTraducao: 'Tradução ainda não disponível — mostrando o texto em português.',
+    destaquesTitulo: 'Destaques',
+    destaquesTexto: 'Locais em destaque na cidade.',
+    verTodos: 'Ver todos',
     hospTitulo: 'Hospedagem',
     hospTexto: 'Pousadas e hotéis de Cajueiro da Praia.',
     gastroTitulo: 'Gastronomia',
@@ -94,6 +97,9 @@ export const TEXTOS = {
   },
   en: {
     semTraducao: 'Translation not available yet — showing the Portuguese text.',
+    destaquesTitulo: 'Highlights',
+    destaquesTexto: 'Places highlighted in town.',
+    verTodos: 'See all',
     hospTitulo: 'Lodging',
     hospTexto: 'Guesthouses and hotels in Cajueiro da Praia.',
     gastroTitulo: 'Food & drink',
@@ -180,6 +186,9 @@ export const TEXTOS = {
   },
   es: {
     semTraducao: 'Traducción aún no disponible — se muestra el texto en portugués.',
+    destaquesTitulo: 'Destacados',
+    destaquesTexto: 'Lugares destacados de la ciudad.',
+    verTodos: 'Ver todos',
     hospTitulo: 'Hospedaje',
     hospTexto: 'Posadas y hoteles de Cajueiro da Praia.',
     gastroTitulo: 'Gastronomía',
