@@ -1,20 +1,21 @@
 // Mapa da cidade (público): mapa ilustrado com marcadores lidos do banco.
-// Clicar num marcador dá zoom, escurece o fundo e abre o modal com os dados do local.
+// Clicar num marcador dá zoom, escurece o fundo e abre o modal com a ficha do local.
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { IconeFechar, IconeLocal, IconeSeta, IconeWhatsApp } from '../components/Icones.jsx';
+import FichaLocal from '../components/FichaLocal.jsx';
+import { IconeFechar } from '../components/Icones.jsx';
 import { useIdioma } from '../i18n/IdiomaContext.jsx';
 import { supabase, urlImagem } from '../lib/supabase.js';
 import {
   COLUNAS_LOCAL_PUBLICO,
   GRUPOS,
-  escolherTraducao,
+  carregarFichaLocal,
   grupoDoLocal,
   nomeCategoria,
   normalizarTexto,
 } from '../lib/locais.js';
 import { useTitulo } from '../lib/seo.js';
-import { inicial, linkGoogleMaps, linkWaze, linkWhatsApp } from '../lib/utils.js';
+import { inicial } from '../lib/utils.js';
 
 const FATOR_ZOOM = 2.4; // quanto o mapa aproxima ao clicar num marcador
 
@@ -26,7 +27,7 @@ function transformParaPonto(x, y) {
 }
 
 export default function MapaCidade() {
-  const { lang, t, caminho, numeroSuporte } = useIdioma();
+  const { lang, t } = useIdioma();
   const [params, setParams] = useSearchParams();
   useTitulo(`${t.mapaTitulo} — Mapa Cajueiro`);
 
@@ -38,8 +39,7 @@ export default function MapaCidade() {
   const [selecionadoId, setSelecionadoId] = useState(null);
   const [zoom, setZoom] = useState(false);
   const [modal, setModal] = useState(false);
-  const [detalhe, setDetalhe] = useState(null); // { local, traducao, usouPortugues, fotos }
-  const [carregandoDetalhe, setCarregandoDetalhe] = useState(false);
+  const [detalhe, setDetalhe] = useState(null); // ficha do local (FichaLocal)
 
   // Filtros: grupo (ex.: hospedagem) e texto da busca
   const [grupo, setGrupo] = useState(() => params.get('grupo') || 'todos');
@@ -114,17 +114,9 @@ export default function MapaCidade() {
     setZoom(true);
     setModal(false);
     setParams({ local: localId }, { replace: true });
-    setCarregandoDetalhe(true);
     setDetalhe(null);
-    const [{ data: local }, { data: trads }, { data: fotos }] = await Promise.all([
-      supabase.from('locais').select(COLUNAS_LOCAL_PUBLICO).eq('id', localId).maybeSingle(),
-      supabase.from('locais_traducoes').select('idioma, descricao, servicos').eq('local_id', localId),
-      supabase.from('fotos').select('path, legenda').eq('local_id', localId).order('ordem').limit(3),
-    ]);
-    const { traducao, usouPortugues } = escolherTraducao(trads, lang);
-    const base = local || marcadores.find((m) => m.local.id === localId)?.local || null;
-    setDetalhe({ local: base, traducao, usouPortugues, fotos: fotos || [] });
-    setCarregandoDetalhe(false);
+    const ficha = await carregarFichaLocal({ id: localId }, lang);
+    if (ficha) setDetalhe(ficha);
     depois(() => setModal(true), 700);
   }
 
@@ -271,123 +263,22 @@ export default function MapaCidade() {
         </aside>
       </div>
 
-      {modal && detalhe ? (
-        <ModalLocal detalhe={detalhe} carregando={carregandoDetalhe} aoFechar={fechar} />
-      ) : null}
+      {modal && detalhe ? <ModalLocal detalhe={detalhe} aoFechar={fechar} /> : null}
     </section>
   );
 }
 
-// Janela com os dados do local (modal central; no celular ocupa quase tudo)
+// Janela central com a ficha do local (no celular ocupa quase tudo)
 function ModalLocal({ detalhe, aoFechar }) {
-  const { lang, t, numeroSuporte } = useIdioma();
-  const { local, traducao, usouPortugues, fotos } = detalhe;
-  if (!local) return null;
-
-  const temCoordenadas = local.latitude != null && local.longitude != null;
-  const linkWa = linkWhatsApp(local.whatsapp, t.msgFalarLocal(local.nome));
-  const linkAtualizar = linkWhatsApp(numeroSuporte, t.msgAtualizar(local.nome));
-  const instagram = local.instagram
-    ? local.instagram.startsWith('http')
-      ? local.instagram
-      : `https://instagram.com/${local.instagram.replace('@', '')}`
-    : '';
-
+  const { t } = useIdioma();
   return (
     <div className="modal-fundo" role="presentation">
       <button className="modal-fundo-botao" onClick={aoFechar} aria-label={t.fechar} />
-      <div className="modal" role="dialog" aria-modal="true" aria-label={local.nome}>
+      <div className="modal" role="dialog" aria-modal="true" aria-label={detalhe.local.nome}>
         <button className="modal-fechar" onClick={aoFechar} aria-label={t.fechar}>
           <IconeFechar />
         </button>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingRight: 48 }}>
-          {local.logo_path ? (
-            <img src={urlImagem(local.logo_path)} alt="" style={{ width: 72, height: 72, borderRadius: '50%', flex: 'none', objectFit: 'cover', boxShadow: '0 4px 12px rgba(0,0,0,.12)' }} />
-          ) : (
-            <span style={{ width: 72, height: 72, borderRadius: '50%', flex: 'none', background: '#1A5FB4', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 26 }}>
-              {inicial(local.nome)}
-            </span>
-          )}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
-            <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: '#18324F' }}>{local.nome}</h2>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
-              <span style={{ fontSize: 14, color: '#1A5FB4', fontWeight: 700 }}>{nomeCategoria(local, lang)}</span>
-              {local.eh_demonstracao ? <span className="etiqueta-demo">{t.demonstracao}</span> : null}
-            </div>
-          </div>
-        </div>
-
-        {usouPortugues ? <div className="aviso aviso-info">{t.semTraducao}</div> : null}
-
-        {fotos.length > 0 ? (
-          <div className="lista-galeria">
-            {fotos.map((f, i) => (
-              <img key={f.path} src={urlImagem(f.path)} alt={f.legenda || `${t.foto} ${i + 1} — ${local.nome}`} />
-            ))}
-          </div>
-        ) : null}
-
-        <p style={{ margin: 0, lineHeight: 1.55, color: '#3A4E66' }}>
-          {traducao?.descricao || t.descricaoVazia}
-        </p>
-
-        {traducao?.servicos?.length ? (
-          <div>
-            <h3 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 800 }}>{t.servicos}</h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {traducao.servicos.map((s) => (
-                <span key={s} className="chip-servico">{s}</span>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 14, color: '#3A4E66' }}>
-          <IconeLocal />
-          <span>
-            <strong>{local.endereco || t.enderecoAFazer}</strong>
-            {local.horario_funcionamento ? <><br />{t.horario}: {local.horario_funcionamento}</> : null}
-          </span>
-        </div>
-
-        {local.telefone ? <p style={{ margin: 0, fontSize: 14 }}>{t.telefone}: {local.telefone}</p> : null}
-        {instagram ? (
-          <p style={{ margin: 0, fontSize: 14 }}>
-            {t.instagram}: <a href={instagram} target="_blank" rel="noopener">{local.instagram}</a>
-          </p>
-        ) : null}
-        {local.site ? (
-          <p style={{ margin: 0, fontSize: 14 }}>
-            {t.site}: <a href={local.site} target="_blank" rel="noopener">{local.site}</a>
-          </p>
-        ) : null}
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {linkWa ? (
-            <a href={linkWa} target="_blank" rel="noopener" className="btn btn-verde">
-              <IconeWhatsApp size={20} /> WhatsApp
-            </a>
-          ) : (
-            <span className="btn" style={{ background: '#EDEFF2', color: '#5A6573', cursor: 'default', fontSize: 14 }}>
-              {t.waNaoCadastrado}
-            </span>
-          )}
-          {temCoordenadas ? (
-            <>
-              <a href={linkGoogleMaps(local.latitude, local.longitude)} target="_blank" rel="noopener" className="btn btn-azul">
-                {t.comoChegar} · Google Maps <IconeSeta size={18} />
-              </a>
-              <a href={linkWaze(local.latitude, local.longitude)} target="_blank" rel="noopener" className="btn btn-contorno">
-                Waze
-              </a>
-            </>
-          ) : null}
-        </div>
-
-        <a href={linkAtualizar} target="_blank" rel="noopener" className="btn" style={{ background: '#E6F6EA', color: '#155F2A' }}>
-          {t.atualizar}
-        </a>
+        <FichaLocal detalhe={detalhe} />
       </div>
     </div>
   );

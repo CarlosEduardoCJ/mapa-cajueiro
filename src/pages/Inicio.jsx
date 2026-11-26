@@ -10,8 +10,16 @@ import { grupoDoLocal, nomeCategoria } from '../lib/locais.js';
 import { useTitulo } from '../lib/seo.js';
 import { inicial, linkWhatsApp } from '../lib/utils.js';
 
-// Botões de categoria da faixa (abrem o mapa já filtrado)
+// Botões de categoria da faixa: hospedagem, gastronomia e turismo têm página própria;
+// comércio e farmácias abrem o mapa já filtrado
 const CATEGORIAS_TOPO = ['hosp', 'gastro', 'comercio', 'saude', 'turismo'];
+const DESTINO_CATEGORIA = {
+  hosp: '/hospedagem',
+  gastro: '/gastronomia',
+  turismo: '/turismo',
+  comercio: '/mapa?grupo=comercio',
+  saude: '/mapa?grupo=saude',
+};
 
 export default function Inicio() {
   const { lang, t, caminho, numeroSuporte } = useIdioma();
@@ -83,7 +91,7 @@ export default function Inicio() {
           </h2>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 4 }}>
             {CATEGORIAS_TOPO.map((chave) => (
-              <Link key={chave} to={caminho(`/mapa?grupo=${chave}`)} className="catb">
+              <Link key={chave} to={caminho(DESTINO_CATEGORIA[chave])} className="catb">
                 <span className="catb-icone">
                   <IconeCategoria tipo={chave} />
                 </span>

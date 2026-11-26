@@ -33,6 +33,9 @@ export default function Rodape() {
               <IconeWhatsApp size={20} /> WhatsApp
             </a>
           ) : null}
+          <Link to={caminho('/sobre')} className="btn" style={{ background: 'transparent', color: '#fff', border: '2px solid rgba(255,255,255,.6)' }}>
+            {t.sobreTitulo}
+          </Link>
           <button onClick={reverIdioma} className="btn" style={{ background: 'transparent', color: '#fff', border: '2px solid rgba(255,255,255,.6)' }}>
             {t.rever}
           </button>

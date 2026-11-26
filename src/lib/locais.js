@@ -1,4 +1,33 @@
 // Funções compartilhadas para ler locais (estabelecimentos e pontos turísticos).
+import { supabase } from './supabase.js';
+
+// Lista os locais publicados (usado nas páginas de categoria e na página inicial)
+export async function listarLocaisPublicados() {
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from('locais')
+    .select('id, slug, tipo, nome, logo_path, eh_demonstracao, categorias ( slug, categorias_traducoes ( nome, idioma ) )')
+    .eq('status', 'publicado')
+    .order('nome');
+  return data || [];
+}
+
+// Busca a ficha completa de um local publicado, por id ou por endereço (slug).
+// Devolve o texto no idioma pedido (com fallback para português) e as fotos.
+export async function carregarFichaLocal({ id, slug }, idioma = 'pt') {
+  if (!supabase) return null;
+  let consulta = supabase.from('locais').select(`${COLUNAS_LOCAL_PUBLICO}, id`).eq('status', 'publicado');
+  consulta = id ? consulta.eq('id', id) : consulta.eq('slug', slug);
+  const { data: local } = await consulta.maybeSingle();
+  if (!local) return null;
+
+  const [{ data: trads }, { data: fotos }] = await Promise.all([
+    supabase.from('locais_traducoes').select('idioma, descricao, servicos').eq('local_id', local.id),
+    supabase.from('fotos').select('path, legenda').eq('local_id', local.id).order('ordem').limit(3),
+  ]);
+  const { traducao, usouPortugues } = escolherTraducao(trads, idioma);
+  return { local, traducao, usouPortugues, fotos: fotos || [] };
+}
 
 // Nome da categoria no idioma pedido; se não existir, usa o português
 export function nomeCategoria(local, idioma = 'pt') {
