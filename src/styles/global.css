@@ -1438,3 +1438,180 @@ textarea {
 .interruptor:disabled {
   opacity: 0.6;
 }
+
+/* ---------- Formulário do local: abas, barra fixa e prévia ---------- */
+.formulario-local {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 920px;
+  padding-bottom: 8px;
+}
+.abas {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  background: #fff;
+  border-radius: 18px;
+  padding: 6px;
+  box-shadow: var(--sombra);
+}
+.aba {
+  flex: 1 1 130px;
+  min-height: 46px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: #1a3e6e;
+  font: 800 15px Nunito, sans-serif;
+  cursor: pointer;
+  padding: 0 12px;
+}
+.aba:hover {
+  background: #eef5ff;
+}
+.aba.ativa {
+  background: var(--azul);
+  color: #fff;
+}
+.painel-aba {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.titulo-aba {
+  margin: 0;
+  font: 400 26px Pacifico, cursive;
+  color: var(--azul);
+}
+.caixa-mapa {
+  background: #f4f9ff;
+  border: 1.5px dashed #bfd4ee;
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.linha-mapa {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.linha-mapa input {
+  flex: 1 1 260px;
+  min-height: 46px;
+  border: 1.5px solid var(--borda);
+  border-radius: 14px;
+  padding: 8px 12px;
+  font-weight: 600;
+}
+.linha-logo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.logo-grande {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+  background: #e3eefb;
+}
+.logo-vazio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--azul);
+  color: #fff;
+  font-weight: 800;
+  font-size: 34px;
+}
+.bloco-traducao {
+  border-top: 1px solid #eef3fa;
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.caixa-marcar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  min-height: 44px;
+  cursor: pointer;
+}
+.caixa-marcar input {
+  width: 22px;
+  height: 22px;
+}
+.previa-ficha {
+  border: 1.5px solid var(--borda);
+  border-radius: 24px;
+  padding: 18px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(26, 95, 180, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 560px;
+}
+.previa-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+}
+.previa-logo-vazio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--azul);
+  color: #fff;
+  font-weight: 800;
+  font-size: 22px;
+}
+.previa-nome {
+  display: block;
+  font-size: 20px;
+  font-weight: 800;
+}
+/* Barra fixa embaixo: Salvar e Salvar e publicar sempre visíveis */
+.barra-salvar {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  background: #fff;
+  border-top: 1px solid var(--borda);
+  box-shadow: 0 -8px 24px rgba(26, 95, 180, 0.12);
+  padding: 12px 16px;
+  margin: 0 -4px;
+  border-radius: 18px 18px 0 0;
+}
+.barra-salvar-texto {
+  margin-right: auto;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cinza-texto);
+}
+.barra-salvar .btn {
+  min-height: 48px;
+}
+@media (max-width: 600px) {
+  .barra-salvar-texto {
+    width: 100%;
+    margin-right: 0;
+  }
+  .barra-salvar .btn {
+    flex: 1 1 140px;
+  }
+}
