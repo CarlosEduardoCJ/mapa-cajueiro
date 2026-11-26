@@ -1762,3 +1762,58 @@ textarea {
     position: static;
   }
 }
+
+/* ---------- Editor do mapa: desfazer, refazer e modo edição ---------- */
+.editor-mapa-raiz {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  outline: none;
+}
+.barra-ferramentas-mapa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border-radius: 18px;
+  padding: 8px 10px;
+  box-shadow: var(--sombra);
+}
+.barra-ferramentas-mapa .btn {
+  min-height: 46px;
+  font-size: 15px;
+}
+.barra-ferramentas-mapa .btn span {
+  font-size: 20px;
+  line-height: 1;
+}
+.modo-edicao {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 2px solid var(--borda);
+  background: #f4f6f9;
+  color: var(--cinza-texto);
+  font: 800 15px Nunito, sans-serif;
+  cursor: pointer;
+}
+.modo-edicao.ligado {
+  background: #fff8df;
+  border-color: var(--amarelo);
+  color: #7a5600;
+}
+.marcador-editor.travado {
+  cursor: pointer;
+}
+@media (max-width: 600px) {
+  .modo-edicao {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+  }
+}
