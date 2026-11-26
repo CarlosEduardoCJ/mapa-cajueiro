@@ -1285,3 +1285,156 @@ textarea {
     display: block;
   }
 }
+
+/* ---------- Lista de locais em cartões ---------- */
+.cabecalho-pagina {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.texto-apoio {
+  margin: 4px 0 0;
+  color: var(--cinza-texto);
+  font-size: 15px;
+}
+.grade-cartoes-locais {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.cartao-local-admin {
+  position: relative;
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: var(--sombra);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.cartao-local-admin:hover {
+  box-shadow: 0 14px 34px rgba(26, 95, 180, 0.18);
+  transform: translateY(-2px);
+}
+/* Link que cobre o cartão todo: clicar em qualquer ponto abre a edição */
+.cartao-stretch::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 22px;
+}
+.cartao-stretch {
+  color: var(--azul-texto);
+  text-decoration: none;
+}
+.cartao-local-admin-topo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.cartao-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+  background: #e3eefb;
+}
+.cartao-logo-inicial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--azul);
+  color: #fff;
+  font-weight: 800;
+  font-size: 24px;
+}
+.cartao-nome {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.cartao-categoria {
+  margin: 2px 0 0;
+  color: var(--cinza-texto);
+  font-size: 14px;
+  font-weight: 700;
+}
+.cartao-etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.cartao-avisos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+.cartao-avisos-titulo {
+  font-weight: 800;
+  color: #7a5600;
+  margin-right: 2px;
+}
+.cartao-avisos-ok {
+  color: #155f2a;
+  font-weight: 800;
+}
+.cartao-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  position: relative;
+  z-index: 2; /* botões ficam por cima do link que cobre o cartão */
+}
+.cartao-botao {
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+.cartao-desativado {
+  opacity: 0.45;
+  cursor: default;
+}
+/* Interruptor Publicado / Rascunho */
+.interruptor {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 10px 0 6px;
+  border-radius: 999px;
+  border: 2px solid var(--borda);
+  background: #f4f6f9;
+  cursor: pointer;
+  font: 800 14px Nunito, sans-serif;
+  color: var(--cinza-texto);
+}
+.interruptor-bola {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  order: -1; /* bolinha à esquerda quando está desligado */
+}
+.interruptor.ligado {
+  background: #e6f6ea;
+  border-color: #25a244;
+  color: #155f2a;
+}
+.interruptor.ligado .interruptor-bola {
+  order: 2; /* bolinha à direita quando está publicado */
+}
+.interruptor:disabled {
+  opacity: 0.6;
+}
