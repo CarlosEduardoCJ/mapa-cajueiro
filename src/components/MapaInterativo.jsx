@@ -9,7 +9,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 
 const ESCALA_MIN = 1; // mapa inteiro
 const ESCALA_MAX = 4; // máximo de aproximação
-const LIMITE_ARRASTO_PX = 6; // movimento menor que isso ainda conta como toque
+const LIMITE_ARRASTO_PX = 5; // movimento menor que isso ainda conta como toque (um toque no touchpad não vira arrasto)
 const DURACAO_ANIMACAO_MS = 450;
 
 // Mantém o zoom entre 1x e 4x e impede que a imagem saia das bordas
@@ -261,6 +261,8 @@ const MapaInterativo = forwardRef(function MapaInterativo(
       onClickCapture={aoClicarCapturado}
       onClick={aoClicar}
       onDragStart={(e) => e.preventDefault()}
+      // Sem menu do botão direito sobre o mapa (também no toque longo do celular e no toque com dois dedos do touchpad)
+      onContextMenu={(e) => e.preventDefault()}
     >
       <div ref={camadaRef} className="mapa-camada">
         <img src={src} alt={alt} draggable={false} />

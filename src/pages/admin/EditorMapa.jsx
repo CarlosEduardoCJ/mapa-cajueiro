@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import MapaInterativo from '../../components/MapaInterativo.jsx';
+import MarcadorMapa from '../../components/MarcadorMapa.jsx';
 import { supabase, BUCKET_MIDIA, urlImagem } from '../../lib/supabase.js';
 import { comprimirImagem } from '../../lib/imagens.js';
 import { inicial } from '../../lib/utils.js';
@@ -14,6 +15,7 @@ import { mensagemAmigavel } from '../../lib/erros.js';
 
 const TAMANHO_PADRAO = 0.05;
 const LIMITE_HISTORICO = 50; // quantas ações ficam guardadas na sessão
+const LIMITE_ARRASTO_PX = 5; // movimentos menores que isso não contam como arrasto (toque no touchpad)
 
 // Descobre largura e altura reais de uma imagem no navegador
 function dimensoesImagem(arquivo) {
@@ -31,7 +33,7 @@ function dimensoesImagem(arquivo) {
 
 // O que de um marcador pode mudar (e portanto é guardado no "antes" e no "depois")
 function estadoDe(m) {
-  return { x: m.x, y: m.y, tamanho: m.tamanho, ativo: m.ativo };
+  return { x: m.x, y: m.y, tamanho: m.tamanho, ativo: m.ativo, estilo: m.estilo || 'logo' };
 }
 
 // Frase curta para a mensagem de desfeito/refeito, conforme o tipo da ação
@@ -44,6 +46,7 @@ function fraseDaAcao(acao, desfazendo) {
     ativar: [`o marcador de ${n} voltou a ficar desativado`, `o marcador de ${n} foi ativado de novo`],
     desativar: [`o marcador de ${n} voltou a ficar ativo`, `o marcador de ${n} foi desativado de novo`],
     remover: [`${n} voltou para o mapa`, `${n} foi removido do mapa de novo`],
+    estilo: [`${n} voltou ao estilo anterior`, `o estilo de ${n} foi mudado de novo`],
   };
   return frases[acao.tipo][desfazendo ? 0 : 1];
 }
@@ -53,7 +56,7 @@ export default function EditorMapa() {
   const [mapa, setMapa] = useState(null);
   const [marcadores, setMarcadores] = useState([]); // { id, local_id, x, y, tamanho, ativo }
   const [locais, setLocais] = useState([]);
-  const [escolhido, setEscolhido] = useState(params.get('local') || ''); // local que será posto ao clicar no mapa
+  const [escolhido, setEscolhido] = useState(''); // local da lista "Fora do mapa" que será posto ao clicar no mapa
   const [selecionado, setSelecionado] = useState(null); // id do marcador com painel aberto
   const [mensagem, setMensagem] = useState(null);
   const [ocupado, setOcupado] = useState(false);
@@ -80,8 +83,8 @@ export default function EditorMapa() {
     setMapa(mapaAtivo || null);
     setLocais(todos || []);
     if (mapaAtivo) {
-      const { data: marc } = await supabase.from('marcadores').select('id, local_id, x, y, tamanho, ativo').eq('mapa_id', mapaAtivo.id);
-      setMarcadores((marc || []).map((m) => ({ ...m, x: Number(m.x), y: Number(m.y), tamanho: Number(m.tamanho) })));
+      const { data: marc } = await supabase.from('marcadores').select('id, local_id, x, y, tamanho, ativo, estilo').eq('mapa_id', mapaAtivo.id);
+      setMarcadores((marc || []).map((m) => ({ ...m, x: Number(m.x), y: Number(m.y), tamanho: Number(m.tamanho), estilo: m.estilo === 'area' ? 'area' : 'logo' })));
     } else {
       setMarcadores([]);
     }
@@ -91,6 +94,19 @@ export default function EditorMapa() {
   useEffect(() => {
     carregar();
   }, []);
+
+  // Chegou pelo atalho "Posicionar no mapa": se o local já está no mapa, só seleciona o marcador;
+  // se ainda não está, deixa escolhido para posicionar
+  useEffect(() => {
+    if (!carregado) return;
+    const idUrl = params.get('local');
+    if (!idUrl) return;
+    const existente = marcadoresRef.current.find((m) => m.local_id === idUrl);
+    if (existente) setSelecionado(existente.id);
+    else if (locais.some((l) => l.id === idUrl)) setEscolhido(idUrl);
+    setParams({}, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [carregado]);
 
   const nomeDoLocal = (localId) => locais.find((l) => l.id === localId);
 
@@ -213,7 +229,7 @@ export default function EditorMapa() {
       if (erroInsert) throw erroInsert;
 
       if (mapa) {
-        const copias = marcadores.map((m) => ({ mapa_id: novoId, local_id: m.local_id, x: m.x, y: m.y, tamanho: m.tamanho, ativo: m.ativo }));
+        const copias = marcadores.map((m) => ({ mapa_id: novoId, local_id: m.local_id, x: m.x, y: m.y, tamanho: m.tamanho, ativo: m.ativo, estilo: m.estilo }));
         if (copias.length) {
           const { error } = await supabase.from('marcadores').insert(copias);
           if (error) throw error;
@@ -242,16 +258,23 @@ export default function EditorMapa() {
     if (!mapa) return;
     const existente = marcadoresRef.current.find((m) => m.local_id === localId);
     const antes = existente ? estadoDe(existente) : null;
-    const depois = { x, y, tamanho: existente ? existente.tamanho : TAMANHO_PADRAO, ativo: true };
+    const depois = { x, y, tamanho: existente ? existente.tamanho : TAMANHO_PADRAO, ativo: true, estilo: existente ? existente.estilo : 'logo' };
     await aplicarEstado(localId, depois);
     registrar({ tipo: existente ? 'mover' : 'posicionar', localId, nome: nomeDoLocal(localId)?.nome || 'Local', antes, depois });
   }
 
   // Clique no fundo do mapa: põe o local escolhido nesse ponto
   async function clicarMapa({ x, y }) {
-    if (!exigirEdicao()) return;
+    // Clicar num ponto vazio NUNCA move um marcador: só tira a seleção.
+    // A única exceção é ter escolhido um local na lista "Fora do mapa" (aí o clique posiciona esse local novo).
     if (!escolhido) {
-      setMensagem({ tipo: 'erro', texto: 'Antes, escolha um local na lista "Fora do mapa". Depois clique no mapa.' });
+      setSelecionado(null);
+      return;
+    }
+    if (!exigirEdicao()) return;
+    if (marcadoresRef.current.some((m) => m.local_id === escolhido)) {
+      setEscolhido('');
+      setMensagem({ tipo: 'erro', texto: 'Esse local já está no mapa. Para mudar a posição, arraste o marcador dele.' });
       return;
     }
     setMensagem(null);
@@ -268,24 +291,30 @@ export default function EditorMapa() {
   // Arrastar um marcador: acompanha o dedo/mouse na tela e SÓ SALVA AO SOLTAR (uma ação no histórico)
   function iniciarArraste(e, marcador, paraNormalizado) {
     if (!edicao) return; // com o cadeado desligado, o marcador só pode ser clicado
+    if (e.button !== 0) return; // botão direito (ou toque com dois dedos no touchpad) não arrasta nada
+    const alvo = e.currentTarget; // guardado agora: o React zera e.currentTarget quando o evento termina
     e.stopPropagation();
     e.preventDefault();
     try {
-      e.currentTarget.setPointerCapture(e.pointerId);
+      alvo.setPointerCapture(e.pointerId);
     } catch (erro) {
       /* sem captura: o arrasto segue enquanto o dedo estiver sobre o marcador */
     }
     const antes = estadoDe(marcador);
+    const inicio = { x: e.clientX, y: e.clientY };
     arrasteRef.current = { moveu: false };
 
     function mover(ev) {
+      // Movimentos pequenos (menos de 5 px) não contam: um toque no touchpad não pode virar arrasto
+      if (!arrasteRef.current.moveu && Math.hypot(ev.clientX - inicio.x, ev.clientY - inicio.y) < LIMITE_ARRASTO_PX) return;
       const { x, y } = paraNormalizado(ev.clientX, ev.clientY);
       arrasteRef.current.moveu = true;
       setMarcadores((lista) => lista.map((m) => (m.id === marcador.id ? { ...m, x, y } : m)));
     }
     async function soltar(ev) {
-      e.currentTarget.removeEventListener('pointermove', mover);
-      e.currentTarget.removeEventListener('pointerup', soltar);
+      alvo.removeEventListener('pointermove', mover);
+      alvo.removeEventListener('pointerup', soltar);
+      alvo.removeEventListener('pointercancel', cancelar);
       const { x, y } = paraNormalizado(ev.clientX, ev.clientY);
       const moveu = arrasteRef.current?.moveu;
       arrasteRef.current = null;
@@ -302,8 +331,17 @@ export default function EditorMapa() {
         await carregar();
       }
     }
-    e.currentTarget.addEventListener('pointermove', mover);
-    e.currentTarget.addEventListener('pointerup', soltar);
+    // Se o navegador cancelar o gesto, nada é salvo e o marcador volta ao lugar
+    function cancelar() {
+      alvo.removeEventListener('pointermove', mover);
+      alvo.removeEventListener('pointerup', soltar);
+      alvo.removeEventListener('pointercancel', cancelar);
+      arrasteRef.current = null;
+      carregar();
+    }
+    alvo.addEventListener('pointermove', mover);
+    alvo.addEventListener('pointerup', soltar);
+    alvo.addEventListener('pointercancel', cancelar);
   }
 
   // Arrastar um nome da lista "Fora do mapa" até a imagem
@@ -354,6 +392,26 @@ export default function EditorMapa() {
       setMensagem({ tipo: 'erro', texto: mensagemAmigavel(erro, 'salvar o tamanho') });
     }
     await carregar();
+  }
+
+  // Como o marcador aparece: logo ou área invisível (vale para Desfazer/Refazer)
+  async function mudarEstilo(marcador, novo) {
+    if (!exigirEdicao()) return;
+    if (marcador.estilo === novo) return;
+    const antes = estadoDe(marcador);
+    const depois = { ...antes, estilo: novo };
+    try {
+      const { error } = await supabase.from('marcadores').update({ estilo: novo }).eq('id', marcador.id);
+      if (error) throw error;
+      registrar({ tipo: 'estilo', localId: marcador.local_id, nome: marcador.locais?.nome || 'Local', antes, depois });
+      setMensagem({
+        tipo: 'ok',
+        texto: novo === 'area' ? 'Salvo! Agora é uma área invisível sobre o logo que já está desenhado no mapa.' : 'Salvo! Agora o mapa mostra o logo do local.',
+      });
+      await carregar();
+    } catch (erro) {
+      setMensagem({ tipo: 'erro', texto: mensagemAmigavel(erro, 'salvar') });
+    }
   }
 
   // Ativa ou desativa o marcador (desativar pede confirmação)
@@ -453,6 +511,12 @@ export default function EditorMapa() {
       {mapa ? (
         <div className="editor-mapa-grade">
           <div>
+            {escolhido && edicao ? (
+              <div className="faixa-posicionar" role="status">
+                <span><strong>Clique no mapa</strong> para posicionar "{nomeEscolhido}" (ou arraste o nome da lista até a imagem).</span>
+                <button type="button" className="btn btn-contorno" onClick={() => { setEscolhido(''); setParams({}, { replace: true }); }}>Cancelar</button>
+              </div>
+            ) : null}
             <div ref={areaRef} className={`area-mapa-editor${escolhido && edicao ? ' pronto' : ''}`}>
               <MapaInterativo
                 src={urlImagem(mapa.imagem_path)}
@@ -462,14 +526,14 @@ export default function EditorMapa() {
                 marcadores={(ctx) => {
                   ctxMapaRef.current = ctx;
                   return marcadoresComNome.map((m) => (
-                    <button
+                    <MarcadorMapa
                       key={m.id}
-                      type="button"
-                      data-marcador
-                      className={`marcador marcador-editor${selecionado === m.id ? ' selecionado' : ''}${edicao ? '' : ' travado'}`}
+                      nome={m.locais?.nome || 'Local'}
+                      logoPath={m.locais?.logo_path}
+                      estilo={m.estilo}
+                      className={`marcador-editor${selecionado === m.id ? ' selecionado' : ''}${edicao ? '' : ' travado'}`}
                       onPointerDown={(e) => iniciarArraste(e, m, ctx.paraNormalizado)}
                       onClick={() => setSelecionado(m.id)}
-                      aria-label={`Marcador: ${m.locais?.nome}`}
                       style={{
                         left: `${m.x * 100}%`,
                         top: `${m.y * 100}%`,
@@ -477,21 +541,13 @@ export default function EditorMapa() {
                         opacity: m.ativo ? 1 : 0.4,
                         touchAction: 'none',
                       }}
-                    >
-                      {m.locais?.logo_path ? (
-                        <img src={urlImagem(m.locais.logo_path)} alt="" draggable={false} className="marcador-logo" />
-                      ) : (
-                        <span className="marcador-pino">{inicial(m.locais?.nome)}</span>
-                      )}
-                    </button>
+                    />
                   ));
                 }}
               />
             </div>
             <p className="texto-apoio" style={{ marginTop: 10 }}>
-              {escolhido && edicao
-                ? <><strong>Clique no mapa</strong> para pôr "{nomeEscolhido}", ou arraste o nome para cá.</>
-                : 'Toque num marcador para ver e editar. Para pôr um local novo, escolha-o na lista "Fora do mapa".'}
+              Toque num marcador para ver e editar. Para mover, arraste o próprio marcador (com o Modo edição ligado). Para pôr um local novo, escolha-o na lista "Fora do mapa".
             </p>
           </div>
 
@@ -530,6 +586,18 @@ export default function EditorMapa() {
                     onKeyUp={(e) => terminarTamanho(marcadorAtual, Number(e.currentTarget.value))}
                   />
                 </label>
+
+                <fieldset className="como-aparece" disabled={!edicao}>
+                  <legend>Como aparece</legend>
+                  <label className={`opcao-estilo${marcadorAtual.estilo === 'logo' ? ' ativa' : ''}`}>
+                    <input type="radio" name="estilo-marcador" checked={marcadorAtual.estilo === 'logo'} onChange={() => mudarEstilo(marcadorAtual, 'logo')} />
+                    <span><strong>Mostrar logo</strong><small>O logo do local aparece sobre o mapa.</small></span>
+                  </label>
+                  <label className={`opcao-estilo${marcadorAtual.estilo === 'area' ? ' ativa' : ''}`}>
+                    <input type="radio" name="estilo-marcador" checked={marcadorAtual.estilo === 'area'} onChange={() => mudarEstilo(marcadorAtual, 'area')} />
+                    <span><strong>Área invisível</strong><small>Para quando o logo já está desenhado no mapa. Mostra só um anel e o nome ao passar o mouse.</small></span>
+                  </label>
+                </fieldset>
 
                 <Link to={`/admin/locais/${marcadorAtual.local_id}`} className="btn btn-azul botao-grande">Editar ficha completa</Link>
                 <button className="btn btn-contorno botao-grande" disabled={!edicao} onClick={() => alternarAtivo(marcadorAtual)}>

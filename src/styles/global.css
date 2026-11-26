@@ -1817,3 +1817,131 @@ textarea {
     justify-content: center;
   }
 }
+
+/* ---------- Marcador estilo "área" (círculo invisível com anel e balão de nome) ---------- */
+.mapa-area,
+.mapa-area * {
+  -webkit-touch-callout: none; /* sem menu de toque longo no celular */
+  -webkit-user-drag: none;
+}
+.mapa-area img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+.marcador-area {
+  background: transparent;
+  border-color: transparent;
+}
+.marcador-area:hover,
+.marcador-area:focus,
+.marcador-area:active {
+  border-color: var(--amarelo);
+  box-shadow: 0 0 0 6px rgba(247, 194, 26, 0.35);
+}
+.marcador-balao {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  background: #18324f;
+  color: #fff;
+  font: 800 14px Nunito, sans-serif;
+  padding: 6px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 6;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+.marcador-balao::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -6px;
+  border: 6px solid transparent;
+  border-top-color: #18324f;
+}
+.marcador-area:hover .marcador-balao,
+.marcador-area:focus .marcador-balao,
+.marcador-area:active .marcador-balao {
+  display: block;
+}
+/* No editor, a área aparece tracejada para dar para ver onde está */
+.marcador-editor.marcador-area {
+  border: 3px dashed var(--azul);
+  background: rgba(26, 95, 180, 0.12);
+}
+.marcador-editor.marcador-area.selecionado {
+  background: rgba(247, 194, 26, 0.25);
+}
+
+/* ---------- Editor do mapa: "Como aparece" e faixa de posicionamento ---------- */
+.como-aparece {
+  border: 1.5px solid var(--borda);
+  border-radius: 16px;
+  padding: 10px 12px 12px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.como-aparece legend {
+  font-weight: 800;
+  font-size: 14px;
+  padding: 0 6px;
+  color: #1a3e6e;
+}
+.como-aparece:disabled {
+  opacity: 0.55;
+}
+.opcao-estilo {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  min-height: 44px;
+  border: 1.5px solid transparent;
+}
+.opcao-estilo.ativa {
+  background: #eef5ff;
+  border-color: var(--azul);
+}
+.opcao-estilo input {
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  flex: none;
+}
+.opcao-estilo span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.opcao-estilo small {
+  color: var(--cinza-texto);
+  font-size: 13px;
+  line-height: 1.35;
+}
+.faixa-posicionar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #fff8df;
+  border: 2px solid var(--amarelo);
+  border-radius: 16px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  color: #5a4300;
+}
+/* No editor, o anel amarelo também aparece ao passar o mouse na área tracejada */
+.marcador-editor.marcador-area:hover,
+.marcador-editor.marcador-area:focus-visible {
+  border-color: var(--amarelo);
+  border-style: solid;
+}

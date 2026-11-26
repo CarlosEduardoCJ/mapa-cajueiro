@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import FichaLocal from '../components/FichaLocal.jsx';
 import MapaInterativo from '../components/MapaInterativo.jsx';
+import MarcadorMapa from '../components/MarcadorMapa.jsx';
 import { IconeFechar } from '../components/Icones.jsx';
 import { useIdioma } from '../i18n/IdiomaContext.jsx';
 import { supabase, urlImagem } from '../lib/supabase.js';
@@ -70,13 +71,13 @@ export default function MapaCidade() {
       if (mapaAtivo) {
         const { data: marc } = await supabase
           .from('marcadores')
-          .select(`id, x, y, tamanho, locais ( ${COLUNAS_LOCAL_PUBLICO}, status )`)
+          .select(`id, x, y, tamanho, estilo, locais ( ${COLUNAS_LOCAL_PUBLICO}, status )`)
           .eq('mapa_id', mapaAtivo.id)
           .eq('ativo', true);
         // Só mostra locais publicados (o banco também garante isso)
         const publicados = (marc || []).filter((m) => m.locais && m.locais.status === 'publicado');
         setMarcadores(
-          publicados.map((m) => ({ id: m.id, x: Number(m.x), y: Number(m.y), tamanho: Number(m.tamanho) || 0.05, local: m.locais })),
+          publicados.map((m) => ({ id: m.id, x: Number(m.x), y: Number(m.y), tamanho: Number(m.tamanho) || 0.05, estilo: m.estilo === 'area' ? 'area' : 'logo', local: m.locais })),
         );
       }
       setCarregando(false);
@@ -195,27 +196,17 @@ export default function MapaCidade() {
                 const pulsa = filtroAtivo && casa && m.local.id !== selecionadoId ? ' pulsa' : '';
                 const fora = casa ? '' : ' fora';
                 return (
-                  <button
+                  <MarcadorMapa
                     key={m.id}
-                    data-marcador
-                    className={`marcador${pulsa}${fora}`}
+                    nome={m.local.nome}
+                    logoPath={m.local.logo_path}
+                    estilo={m.estilo}
+                    className={`${pulsa}${fora}`.trim()}
                     tabIndex={casa ? 0 : -1}
                     onClick={() => escolher(m.local.id)}
-                    aria-label={m.local.nome}
                     title={m.local.nome}
                     style={{ left: `${m.x * 100}%`, top: `${m.y * 100}%`, width: `${m.tamanho * 100}%` }}
-                  >
-                    {m.local.logo_path ? (
-                      <img
-                        src={urlImagem(m.local.logo_path)}
-                        alt=""
-                        draggable={false}
-                        style={{ width: '100%', height: '100%', borderRadius: '50%', border: '3px solid #fff', boxSizing: 'border-box', background: '#fff', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <span className="marcador-pino">{inicial(m.local.nome)}</span>
-                    )}
-                  </button>
+                  />
                 );
               })
             }
