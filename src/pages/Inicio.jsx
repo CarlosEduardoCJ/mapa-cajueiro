@@ -83,13 +83,12 @@ export default function Inicio() {
     })();
   }, []);
 
-  if (!dados) return <p style={{ padding: 48, textAlign: 'center', color: '#4A6380' }}>{t.carregando}</p>;
-
-  const visivel = (chave) => dados.secoes.find((s) => s.chave === chave)?.visivel !== false;
+  // O topo aparece logo; as seções esperam os dados do banco
+  const visivel = (chave) => !dados || dados.secoes.find((s) => s.chave === chave)?.visivel !== false;
   const linkWa = linkWhatsApp(numeroSuporte, t.msgSuporte);
 
   // Cada seção vira um bloco; a ordem vem do painel
-  const blocos = {
+  const blocos = dados ? {
     categorias: <SecaoCategorias key="categorias" />,
     mapa: <SecaoLocais key="mapa" titulo={t.noMapa} texto={t.toqueLocal} locais={dados.locais} />,
     destaques: <SecaoLocais key="destaques" titulo={t.destaquesTitulo} texto={t.destaquesTexto} locais={dados.locais.filter((l) => l.destaque)} />,
@@ -99,15 +98,17 @@ export default function Inicio() {
     eventos: <SecaoEventos key="eventos" eventos={dados.eventos} />,
     noticias: <SecaoNoticias key="noticias" noticias={dados.noticias} />,
     contato: <SecaoContato key="contato" linkWa={linkWa} />,
-  };
+  } : {};
 
   return (
     <>
-      {visivel('banner') ? <Topo banner={dados.banner} mapaImagem={dados.mapa?.imagem_path} linkWa={linkWa} /> : null}
-      {dados.secoes
-        .filter((s) => s.chave !== 'banner' && s.visivel !== false)
-        .sort((a, b) => a.ordem - b.ordem)
-        .map((s) => blocos[s.chave] || null)}
+      {visivel('banner') ? <Topo banner={dados?.banner} mapaImagem={dados?.mapa?.imagem_path} linkWa={linkWa} /> : null}
+      {dados
+        ? dados.secoes
+            .filter((s) => s.chave !== 'banner' && s.visivel !== false)
+            .sort((a, b) => a.ordem - b.ordem)
+            .map((s) => blocos[s.chave] || null)
+        : <p style={{ padding: 48, textAlign: 'center', color: '#4A6380' }}>{t.carregando}</p>}
     </>
   );
 }
@@ -151,8 +152,8 @@ function Topo({ banner, mapaImagem, linkWa }) {
         </div>
 
         <div className="hero-mapa">
-          <Link to={caminho('/mapa')} aria-label={t.explorarMapa}>
-            <img src={imagemMapa} alt="" style={{ width: '100%', height: 'auto' }} loading="eager" />
+          <Link to={caminho('/mapa')} aria-label={t.explorarMapa} className="hero-moldura">
+            <img src={imagemMapa} alt="" loading="eager" />
           </Link>
         </div>
       </div>

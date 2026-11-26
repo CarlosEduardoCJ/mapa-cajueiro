@@ -7,6 +7,7 @@ export const CHAVE_IDIOMA = 'mc_lang'; // nome da chave no localStorage (escolha
 
 export const TEXTOS = {
   pt: {
+
     semTraducao: 'Tradução ainda não disponível — mostrando o texto em português.',
     destaquesTitulo: 'Destaques',
     destaquesTexto: 'Locais em destaque na cidade.',
@@ -35,6 +36,11 @@ export const TEXTOS = {
     sobreVazio: 'Texto ainda não cadastrado. A equipe pode escrever pelo painel.',
     fichaLocal: 'Ficha do local',
     naoEncontradoItem: 'Conteúdo não encontrado.',
+    navSobre: 'Sobre a cidade',
+    navTurismo: 'Turismo',
+    navPontos: 'Pontos turísticos',
+    navAbrirMenu: 'Abrir menu',
+    navFecharMenu: 'Fechar menu',
     navInicio: 'Início',
     navMapa: 'Mapa da cidade',
     navContato: 'Contato',
@@ -96,6 +102,7 @@ export const TEXTOS = {
     msgComerciante: 'Olá! Tenho um estabelecimento em Cajueiro da Praia e quero aparecer no Mapa Cajueiro.',
   },
   en: {
+
     semTraducao: 'Translation not available yet — showing the Portuguese text.',
     destaquesTitulo: 'Highlights',
     destaquesTexto: 'Places highlighted in town.',
@@ -124,6 +131,11 @@ export const TEXTOS = {
     sobreVazio: 'Text not added yet. The team can write it in the admin panel.',
     fichaLocal: 'Place details',
     naoEncontradoItem: 'Content not found.',
+    navSobre: 'About the town',
+    navTurismo: 'Tourism',
+    navPontos: 'Tourist spots',
+    navAbrirMenu: 'Open menu',
+    navFecharMenu: 'Close menu',
     navInicio: 'Home',
     navMapa: 'Town map',
     navContato: 'Contact',
@@ -185,6 +197,7 @@ export const TEXTOS = {
     msgComerciante: 'Hi! I have a business in Cajueiro da Praia and want to be on Mapa Cajueiro.',
   },
   es: {
+
     semTraducao: 'Traducción aún no disponible — se muestra el texto en portugués.',
     destaquesTitulo: 'Destacados',
     destaquesTexto: 'Lugares destacados de la ciudad.',
@@ -213,6 +226,11 @@ export const TEXTOS = {
     sobreVazio: 'Texto aún no registrado. El equipo puede escribirlo en el panel.',
     fichaLocal: 'Ficha del lugar',
     naoEncontradoItem: 'Contenido no encontrado.',
+    navSobre: 'Sobre la ciudad',
+    navTurismo: 'Turismo',
+    navPontos: 'Puntos turísticos',
+    navAbrirMenu: 'Abrir menú',
+    navFecharMenu: 'Cerrar menú',
     navInicio: 'Inicio',
     navMapa: 'Mapa de la ciudad',
     navContato: 'Contacto',

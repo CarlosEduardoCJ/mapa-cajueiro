@@ -295,7 +295,9 @@ textarea {
 }
 .hero-titulo {
   margin: 0;
-  font: 400 clamp(54px, 7.4vw, 112px) / 1.05 'Lily Script One', cursive;
+  max-width: 100%;
+  /* no máximo 2 linhas: no computador cabe em uma; no celular quebra em duas */
+  font: 400 clamp(44px, 5.2vw, 88px) / 1.05 'Lily Script One', cursive;
   color: var(--azul-escuro);
   text-shadow: 5px 5px 0 #fff, -5px 5px 0 #fff, 5px -5px 0 #fff, -5px -5px 0 #fff,
     0 6px 0 #fff, 0 -6px 0 #fff, 6px 0 0 #fff, -6px 0 0 #fff, 0 14px 24px rgba(0, 0, 0, 0.3);
@@ -321,17 +323,22 @@ textarea {
   position: relative;
   padding: 24px 12px;
 }
-.hero-mapa button {
+.hero-moldura {
   display: block;
   width: 100%;
   padding: 0;
-  border: 10px solid #fff;
+  border: 10px solid #fff; /* moldura branca grossa */
   border-radius: 30px;
   overflow: hidden;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
-  cursor: pointer;
-  transform: rotate(-4deg);
+  transform: rotate(-4deg); /* inclinado, como na referência aprovada */
   background: #fff;
+}
+.hero-moldura img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 20px;
 }
 
 /* ---------- Mapa interativo (zoom e arrasto: ver src/components/MapaInterativo.jsx) ---------- */
@@ -844,4 +851,210 @@ textarea {
 .foto-editor-botoes button.remover {
   color: #a4262c;
   border-color: #e5b3b5;
+}
+
+/* ---------- Cabeçalho: menu do computador, submenu e painel do celular ---------- */
+.cabecalho-interno {
+  flex-wrap: nowrap;
+  justify-content: space-between;
+}
+.menu {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  flex: 1 1 auto;
+  padding-left: 16px;
+  margin: 0;
+}
+.menu > a,
+.menu-botao {
+  font: 800 16px Nunito, sans-serif;
+  color: #1a4f96;
+  text-decoration: none;
+  background: none;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  padding: 8px 2px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.menu > a.ativo,
+.menu-botao.ativo {
+  border-bottom-color: var(--amarelo);
+  color: var(--azul);
+}
+.submenu {
+  position: relative;
+}
+.submenu-lista {
+  position: absolute;
+  top: 100%;
+  left: -12px;
+  min-width: 240px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(26, 95, 180, 0.2);
+  padding: 8px;
+  display: none;
+  flex-direction: column;
+  z-index: 30;
+}
+.submenu.aberto .submenu-lista {
+  display: flex;
+}
+.menu .submenu-lista a {
+  display: block;
+  font-size: 16px;
+  padding: 10px 14px;
+  border-bottom: 0;
+  border-radius: 12px;
+  color: #1a3e6e;
+}
+.menu .submenu-lista a:hover {
+  background: #eef5ff;
+}
+.menu .submenu-lista a.ativo {
+  color: var(--azul);
+  background: #fff7d6;
+}
+.cabecalho-acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.cabecalho-suporte {
+  min-height: 48px !important;
+  padding: 0 18px !important;
+  font-size: 16px !important;
+}
+.menu-hamburguer {
+  display: none;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  background: #fff;
+  cursor: pointer;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-left: auto;
+}
+.menu-hamburguer span {
+  display: block;
+  width: 26px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--azul);
+}
+.menu-celular {
+  display: none;
+}
+.rodape-menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px 18px;
+  width: 100%;
+}
+.rodape-menu a {
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 15px;
+}
+.rodape-menu a:hover {
+  text-decoration: underline;
+}
+
+/* Computador um pouco mais estreito: encolhe os textos para caber numa linha */
+@media (max-width: 1240px) and (min-width: 901px) {
+  .menu {
+    gap: 2px 12px;
+  }
+  .menu > a,
+  .menu-botao {
+    font-size: 15px;
+  }
+  .lp {
+    width: 44px;
+    height: 44px;
+    font-size: 15px;
+  }
+}
+
+/* Celular e tablet: botão de 3 linhas e painel com todos os links */
+@media (max-width: 900px) {
+  .menu,
+  .cabecalho-acoes {
+    display: none;
+  }
+  .menu-hamburguer {
+    display: flex;
+  }
+  .cabecalho-interno {
+    padding: 8px 16px;
+  }
+  .cabecalho-logo img {
+    height: 48px;
+  }
+  .menu-celular {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: calc(100vh - 72px);
+    overflow-y: auto;
+    background: #fff;
+    box-shadow: 0 16px 30px rgba(26, 95, 180, 0.2);
+    padding: 8px 18px 24px;
+    z-index: 25;
+  }
+  .menu-celular > a,
+  .menu-celular-grupo > .subitem {
+    display: block;
+    text-decoration: none;
+    color: var(--azul-texto);
+    font: 800 20px Nunito, sans-serif;
+    padding: 10px 6px;
+    border-bottom: 1px solid #eef3fa;
+  }
+  .menu-celular > a.ativo,
+  .menu-celular-grupo > .subitem.ativo {
+    color: var(--azul);
+    border-left: 5px solid var(--amarelo);
+    padding-left: 12px;
+  }
+  .menu-celular-titulo {
+    display: block;
+    font: 800 15px Nunito, sans-serif;
+    color: var(--cinza-texto);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 10px 6px 0;
+  }
+  .menu-celular-grupo > .subitem {
+    font-size: 17px;
+    padding-left: 26px;
+    font-weight: 700;
+  }
+  .menu-celular-idiomas {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    padding: 10px 0 6px;
+  }
+  .menu-celular-idiomas .lp {
+    width: 56px;
+    height: 56px;
+  }
+}
+@media (min-width: 901px) {
+  .menu-celular {
+    display: none !important;
+  }
 }

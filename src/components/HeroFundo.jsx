@@ -33,15 +33,13 @@ export default function HeroFundo() {
       </defs>
       <rect width="1600" height="800" fill="url(#ceu)" />
       <rect width="1600" height="800" fill="url(#brilho)" />
-      <circle cx="320" cy="430" r="95" fill="#FFF3C8" />
+      <circle cx="250" cy="330" r="90" fill="#FFF3C8" />
       <rect y="548" width="1600" height="252" fill="url(#mar)" />
       <g fill="#FFD27A" opacity=".75">
-        <rect x="250" y="566" width="140" height="5" rx="2.5" />
-        <rect x="215" y="588" width="210" height="5" rx="2.5" />
-        <rect x="265" y="612" width="120" height="6" rx="3" />
-        <rect x="190" y="640" width="260" height="6" rx="3" />
-        <rect x="245" y="672" width="160" height="7" rx="3.5" />
-        <rect x="160" y="708" width="320" height="8" rx="4" />
+        <rect x="200" y="700" width="120" height="4" rx="2" />
+        <rect x="230" y="714" width="170" height="4" rx="2" />
+        <rect x="190" y="728" width="200" height="5" rx="2.5" />
+        <rect x="250" y="744" width="140" height="5" rx="2.5" />
       </g>
       <path d="M0 520 C 120 505, 260 515, 420 528 C 560 538, 760 532, 980 540 L 1600 552 L 1600 560 L 0 560 Z" fill="#2A170F" />
       <use href="#coqueiro" transform="translate(40 540) scale(1.1)" />

@@ -4,11 +4,14 @@ import { useIdioma, salvarIdioma } from '../i18n/IdiomaContext.jsx';
 import { CHAVE_IDIOMA } from '../i18n/textos.js';
 import { linkWhatsApp } from '../lib/utils.js';
 import { IconeWhatsApp } from './Icones.jsx';
+import { itensMenu } from './itensMenu.js';
 
 export default function Rodape() {
   const { t, caminho, numeroSuporte } = useIdioma();
   const navigate = useNavigate();
   const linkSuporte = linkWhatsApp(numeroSuporte, t.msgSuporte);
+  // Mesmos links do cabeçalho, em lista simples (Turismo aparece com seus três itens)
+  const linksMenu = itensMenu(t).flatMap((item) => (item.grupo ? item.grupo : [item]));
 
   // Mostra de novo a tela de escolha de idioma (apaga a escolha salva)
   function reverIdioma() {
@@ -27,15 +30,17 @@ export default function Rodape() {
           <span style={{ font: '400 26px Pacifico, cursive' }}>Mapa Cajueiro</span>
           <small>{t.rodape}</small>
         </div>
+        <nav className="rodape-menu" aria-label={t.navMapa}>
+          {linksMenu.map((l) => (
+            <Link key={l.rota} to={caminho(l.rota)}>{l.rotulo}</Link>
+          ))}
+        </nav>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
           {linkSuporte ? (
             <a href={linkSuporte} target="_blank" rel="noopener" className="btn btn-verde">
               <IconeWhatsApp size={20} /> WhatsApp
             </a>
           ) : null}
-          <Link to={caminho('/sobre')} className="btn" style={{ background: 'transparent', color: '#fff', border: '2px solid rgba(255,255,255,.6)' }}>
-            {t.sobreTitulo}
-          </Link>
           <button onClick={reverIdioma} className="btn" style={{ background: 'transparent', color: '#fff', border: '2px solid rgba(255,255,255,.6)' }}>
             {t.rever}
           </button>
