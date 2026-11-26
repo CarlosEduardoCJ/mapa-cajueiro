@@ -1,9 +1,12 @@
-// Editor do mapa: troca a imagem do mapa e posiciona os locais clicando (ou arrastando) sobre ela.
+// Editor do mapa: troca a imagem do mapa e posiciona os locais com zoom e arrasto (igual ao mapa público).
+// Clique no mapa = põe o local escolhido ali. Arrastar um marcador = move ele.
 // As posições (x, y) são só da imagem; as coordenadas reais (lat/lng) ficam no cadastro do local.
 import { useEffect, useRef, useState } from 'react';
+import MapaInterativo from '../../components/MapaInterativo.jsx';
 import { supabase, BUCKET_MIDIA, urlImagem } from '../../lib/supabase.js';
 import { comprimirImagem } from '../../lib/imagens.js';
 import { inicial } from '../../lib/utils.js';
+import { mensagemAmigavel } from '../../lib/erros.js';
 
 const TAMANHO_PADRAO = 0.05;
 
@@ -23,14 +26,14 @@ function dimensoesImagem(arquivo) {
 
 export default function EditorMapa() {
   const [mapa, setMapa] = useState(null);
-  const [marcadores, setMarcadores] = useState([]); // { id, local_id, x, y, tamanho, ativo, locais }
+  const [marcadores, setMarcadores] = useState([]); // { id, local_id, x, y, tamanho, ativo }
   const [locais, setLocais] = useState([]);
-  const [escolhido, setEscolhido] = useState(''); // local que será posto ao clicar na imagem
+  const [escolhido, setEscolhido] = useState(''); // local que será posto ao clicar no mapa
   const [selecionado, setSelecionado] = useState(null); // id do marcador selecionado
   const [mensagem, setMensagem] = useState(null);
   const [ocupado, setOcupado] = useState(false);
-  const imagemRef = useRef(null);
-  const arrastando = useRef(null); // { localId, moveu }
+  const [carregado, setCarregado] = useState(false);
+  const arrasteRef = useRef(null); // { id, moveu, localId } enquanto um marcador é arrastado
 
   async function carregar() {
     const [{ data: mapaAtivo }, { data: todos }] = await Promise.all([
@@ -44,10 +47,11 @@ export default function EditorMapa() {
         .from('marcadores')
         .select('id, local_id, x, y, tamanho, ativo')
         .eq('mapa_id', mapaAtivo.id);
-      setMarcadores(marc || []);
+      setMarcadores((marc || []).map((m) => ({ ...m, x: Number(m.x), y: Number(m.y), tamanho: Number(m.tamanho) })));
     } else {
       setMarcadores([]);
     }
+    setCarregado(true);
   }
 
   useEffect(() => {
@@ -59,6 +63,7 @@ export default function EditorMapa() {
   // Troca a imagem do mapa: cria um mapa novo, copia as posições e ativa o novo
   async function trocarImagem(e) {
     const arquivo = e.target.files?.[0];
+    e.target.value = '';
     if (!arquivo) return;
     setOcupado(true);
     setMensagem(null);
@@ -81,118 +86,125 @@ export default function EditorMapa() {
       });
       if (erroInsert) throw erroInsert;
 
-      // Copia as posições do mapa antigo para o novo
+      // Copia as posições do mapa antigo para o novo (depois a equipe confere)
       if (mapa) {
         const copias = marcadores.map((m) => ({ mapa_id: novoId, local_id: m.local_id, x: m.x, y: m.y, tamanho: m.tamanho, ativo: m.ativo }));
         if (copias.length) {
           const { error } = await supabase.from('marcadores').insert(copias);
           if (error) throw error;
         }
-        await supabase.from('mapas').update({ ativo: false }).eq('ativo', true);
+        const { error: erroDesativa } = await supabase.from('mapas').update({ ativo: false }).eq('ativo', true);
+        if (erroDesativa) throw erroDesativa;
       }
       const { error: erroAtivo } = await supabase.from('mapas').update({ ativo: true }).eq('id', novoId);
       if (erroAtivo) throw erroAtivo;
 
-      setMensagem({ tipo: 'ok', texto: 'Imagem do mapa trocada. Confira a posição de todos os marcadores: a imagem nova pode ter outro enquadramento.' });
+      setMensagem({ tipo: 'ok', texto: 'Salvo! A imagem do mapa foi trocada. Confira a posição de todos os marcadores, porque a imagem nova pode ter outro enquadramento.' });
       await carregar();
     } catch (erro) {
-      setMensagem({ tipo: 'erro', texto: erro?.message || 'Não foi possível trocar a imagem.' });
+      setMensagem({ tipo: 'erro', texto: mensagemAmigavel(erro, 'trocar a imagem do mapa') });
     }
     setOcupado(false);
-    e.target.value = '';
   }
 
   // Grava (cria ou atualiza) a posição de um local no mapa ativo
-  async function gravarPosicao(localId, x, y, extras = {}) {
+  async function gravarPosicao(localId, x, y) {
     if (!mapa) return;
     const existente = marcadores.find((m) => m.local_id === localId);
     if (existente) {
-      const { error } = await supabase.from('marcadores').update({ x, y, ...extras }).eq('id', existente.id);
+      const { error } = await supabase.from('marcadores').update({ x, y }).eq('id', existente.id);
       if (error) throw error;
     } else {
       const { error } = await supabase
         .from('marcadores')
-        .insert({ mapa_id: mapa.id, local_id: localId, x, y, tamanho: TAMANHO_PADRAO, ativo: true, ...extras });
+        .insert({ mapa_id: mapa.id, local_id: localId, x, y, tamanho: TAMANHO_PADRAO, ativo: true });
       if (error) throw error;
     }
     await carregar();
   }
 
-  // Coordenadas da imagem (0 a 1) a partir de um clique ou arraste
-  function posicaoNoMapa(clientX, clientY) {
-    const rect = imagemRef.current.getBoundingClientRect();
-    const x = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-    const y = Math.min(1, Math.max(0, (clientY - rect.top) / rect.height));
-    return { x, y };
-  }
-
-  // Clique na imagem: põe o local escolhido nesse ponto
-  async function clicarMapa(e) {
-    if (arrastando.current) return; // veio de um arraste, não de um clique
+  // Clique no fundo do mapa: põe o local escolhido nesse ponto
+  async function clicarMapa({ x, y }) {
     if (!escolhido) {
-      setMensagem({ tipo: 'erro', texto: 'Escolha um local na lista ao lado antes de clicar no mapa.' });
+      setMensagem({ tipo: 'erro', texto: 'Antes, escolha um local na lista ao lado. Depois clique no mapa.' });
       return;
     }
-    const { x, y } = posicaoNoMapa(e.clientX, e.clientY);
     setMensagem(null);
     try {
       await gravarPosicao(escolhido, x, y);
-      setSelecionado(marcadores.find((m) => m.local_id === escolhido)?.id || null);
-      setMensagem({ tipo: 'ok', texto: `Posição salva: ${nomeDoLocal(escolhido)?.nome}.` });
+      setMensagem({ tipo: 'ok', texto: `Salvo! ${nomeDoLocal(escolhido)?.nome} foi posicionado.` });
     } catch (erro) {
-      setMensagem({ tipo: 'erro', texto: erro.message });
+      setMensagem({ tipo: 'erro', texto: mensagemAmigavel(erro, 'salvar a posição') });
     }
   }
 
   // Arrastar um marcador: move enquanto o dedo/mouse se mexe e salva ao soltar
-  function iniciarArraste(e, marcador) {
+  function iniciarArraste(e, marcador, paraNormalizado) {
     e.stopPropagation();
     e.preventDefault();
-    arrastando.current = { localId: marcador.local_id, moveu: false };
-    const alvo = e.currentTarget;
-    alvo.setPointerCapture?.(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch (erro) {
+      /* sem captura: o arrasto ainda funciona enquanto o dedo estiver sobre o marcador */
+    }
+    arrasteRef.current = { id: marcador.id, localId: marcador.local_id, moveu: false };
 
     function mover(ev) {
-      const { x, y } = posicaoNoMapa(ev.clientX, ev.clientY);
-      arrastando.current.moveu = true;
+      const { x, y } = paraNormalizado(ev.clientX, ev.clientY);
+      arrasteRef.current.moveu = true;
       setMarcadores((lista) => lista.map((m) => (m.id === marcador.id ? { ...m, x, y } : m)));
     }
     async function soltar(ev) {
-      alvo.removeEventListener('pointermove', mover);
-      alvo.removeEventListener('pointerup', soltar);
-      const { x, y } = posicaoNoMapa(ev.clientX, ev.clientY);
-      const moveu = arrastando.current.moveu;
-      setTimeout(() => (arrastando.current = null), 0);
+      e.currentTarget.removeEventListener('pointermove', mover);
+      e.currentTarget.removeEventListener('pointerup', soltar);
+      const { x, y } = paraNormalizado(ev.clientX, ev.clientY);
+      const moveu = arrasteRef.current?.moveu;
+      arrasteRef.current = null;
       if (moveu) {
         try {
-          await supabase.from('marcadores').update({ x, y }).eq('id', marcador.id);
-          setMensagem({ tipo: 'ok', texto: 'Posição atualizada.' });
+          const { error } = await supabase.from('marcadores').update({ x, y }).eq('id', marcador.id);
+          if (error) throw error;
+          setMensagem({ tipo: 'ok', texto: 'Salvo! Posição atualizada.' });
         } catch (erro) {
-          setMensagem({ tipo: 'erro', texto: erro.message });
+          setMensagem({ tipo: 'erro', texto: mensagemAmigavel(erro, 'salvar a posição') });
         }
         await carregar();
       }
     }
-    alvo.addEventListener('pointermove', mover);
-    alvo.addEventListener('pointerup', soltar);
+    e.currentTarget.addEventListener('pointermove', mover);
+    e.currentTarget.addEventListener('pointerup', soltar);
   }
 
   async function alterar(marcador, extras) {
     try {
       const { error } = await supabase.from('marcadores').update(extras).eq('id', marcador.id);
       if (error) throw error;
+      setMensagem({ tipo: 'ok', texto: 'Salvo!' });
       await carregar();
     } catch (erro) {
-      setMensagem({ tipo: 'erro', texto: erro.message });
+      setMensagem({ tipo: 'erro', texto: mensagemAmigavel(erro, 'salvar') });
     }
   }
 
+  async function alternarAtivo(marcador) {
+    if (marcador.ativo) {
+      const ok = window.confirm(`Desativar "${marcador.locais?.nome || 'este local'}"? Ele some do mapa do site até você reativar.`);
+      if (!ok) return;
+    }
+    alterar(marcador, { ativo: !marcador.ativo });
+  }
+
   async function remover(marcador) {
-    if (!window.confirm(`Remover o marcador de "${marcador.locais?.nome || 'este local'}" do mapa? O local continua cadastrado.`)) return;
-    const { error } = await supabase.from('marcadores').delete().eq('id', marcador.id);
-    if (error) setMensagem({ tipo: 'erro', texto: error.message });
-    setSelecionado(null);
-    await carregar();
+    if (!window.confirm(`Remover "${marcador.locais?.nome || 'este local'}" do mapa? O local continua cadastrado.`)) return;
+    try {
+      const { error } = await supabase.from('marcadores').delete().eq('id', marcador.id);
+      if (error) throw error;
+      setSelecionado(null);
+      setMensagem({ tipo: 'ok', texto: 'Salvo! Marcador removido do mapa.' });
+      await carregar();
+    } catch (erro) {
+      setMensagem({ tipo: 'erro', texto: mensagemAmigavel(erro, 'remover o marcador') });
+    }
   }
 
   // Locais que ainda não estão no mapa aparecem primeiro na lista
@@ -218,23 +230,31 @@ export default function EditorMapa() {
         </label>
       </section>
 
-      {mensagem ? <div className={`aviso ${mensagem.tipo === 'erro' ? 'aviso-erro' : 'aviso-ok'}`}>{mensagem.texto}</div> : null}
+      {mensagem ? (
+        <div className={`aviso ${mensagem.tipo === 'erro' ? 'aviso-erro' : 'aviso-ok'}`} role="status" style={{ fontWeight: 700 }}>
+          {mensagem.texto}
+        </div>
+      ) : null}
+
+      {!carregado ? <p style={{ color: '#4A6380' }}>Carregando…</p> : null}
 
       {mapa ? (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'flex-start' }}>
           <div style={{ flex: '999 1 560px', minWidth: 0 }}>
-            <div className="mapa-area" style={{ aspectRatio: `${mapa.largura} / ${mapa.altura}`, cursor: escolhido ? 'crosshair' : 'default' }} onClick={clicarMapa}>
-              <div className="mapa-imagem" style={{ position: 'absolute', inset: 0 }}>
-                <img ref={imagemRef} src={urlImagem(mapa.imagem_path)} alt="Mapa para posicionar os locais" draggable={false} style={{ width: '100%', height: '100%' }} />
-                {marcadoresComNome.map((m) => (
+            <MapaInterativo
+              src={urlImagem(mapa.imagem_path)}
+              alt="Mapa para posicionar os locais"
+              proporcao={`${mapa.largura} / ${mapa.altura}`}
+              onPontoClique={clicarMapa}
+              marcadores={({ paraNormalizado }) =>
+                marcadoresComNome.map((m) => (
                   <button
                     key={m.id}
+                    type="button"
+                    data-marcador
                     className="marcador"
-                    onPointerDown={(e) => iniciarArraste(e, m)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelecionado(m.id);
-                    }}
+                    onPointerDown={(e) => iniciarArraste(e, m, paraNormalizado)}
+                    onClick={() => setSelecionado(m.id)}
                     aria-label={m.locais?.nome}
                     style={{
                       left: `${m.x * 100}%`,
@@ -251,11 +271,13 @@ export default function EditorMapa() {
                       <span className="marcador-pino">{inicial(m.locais?.nome)}</span>
                     )}
                   </button>
-                ))}
-              </div>
-            </div>
+                ))
+              }
+            />
             <p style={{ fontSize: 13, color: '#4A6380' }}>
-              {escolhido ? `Clique no mapa para pôr "${nomeDoLocal(escolhido)?.nome}". Arraste um marcador para mover.` : 'Escolha um local na lista para posicionar. Arraste um marcador para mover.'}
+              {escolhido
+                ? `Clique no mapa para pôr "${nomeDoLocal(escolhido)?.nome}". Arraste um marcador para mover. Use + e − (ou a roda do mouse, ou dois dedos) para aproximar.`
+                : 'Escolha um local na lista ao lado para posicioná-lo. Arraste um marcador para mover. Use + e − para aproximar.'}
             </p>
           </div>
 
@@ -284,12 +306,12 @@ export default function EditorMapa() {
                     step="0.005"
                     value={marcadorAtual.tamanho}
                     onChange={(e) => setMarcadores((lista) => lista.map((m) => (m.id === marcadorAtual.id ? { ...m, tamanho: Number(e.target.value) } : m)))}
-                    onMouseUp={(e) => alterar(marcadorAtual, { tamanho: Number(e.currentTarget.value) })}
-                    onTouchEnd={(e) => alterar(marcadorAtual, { tamanho: Number(e.currentTarget.value) })}
+                    onPointerUp={(e) => alterar(marcadorAtual, { tamanho: Number(e.currentTarget.value) })}
+                    onKeyUp={(e) => alterar(marcadorAtual, { tamanho: Number(e.currentTarget.value) })}
                   />
                 </label>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button className="btn btn-contorno" style={{ minHeight: 40 }} onClick={() => alterar(marcadorAtual, { ativo: !marcadorAtual.ativo })}>
+                  <button className="btn btn-contorno" style={{ minHeight: 40 }} onClick={() => alternarAtivo(marcadorAtual)}>
                     {marcadorAtual.ativo ? 'Desativar' : 'Ativar'}
                   </button>
                   <button className="btn btn-perigo" style={{ minHeight: 40 }} onClick={() => remover(marcadorAtual)}>
@@ -311,9 +333,9 @@ export default function EditorMapa() {
             </div>
           </aside>
         </div>
-      ) : (
+      ) : carregado ? (
         <p className="aviso aviso-info">Envie a imagem do mapa para começar a posicionar os locais.</p>
-      )}
+      ) : null}
     </>
   );
 }

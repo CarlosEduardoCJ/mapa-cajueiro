@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase, urlImagem } from '../../lib/supabase.js';
 import { enviarImagem, nomeUnico } from '../../lib/imagens.js';
+import { mensagemAmigavel } from '../../lib/erros.js';
 
 const NOMES_SECOES = {
   banner: 'Topo (banner)',
@@ -43,13 +44,13 @@ export default function PaginaInicio() {
     const b = secoes[outro];
     const { error: e1 } = await supabase.from('secoes_inicio').update({ ordem: b.ordem }).eq('chave', a.chave);
     const { error: e2 } = await supabase.from('secoes_inicio').update({ ordem: a.ordem }).eq('chave', b.chave);
-    if (e1 || e2) setMensagem({ tipo: 'erro', texto: (e1 || e2).message });
+    if (e1 || e2) setMensagem({ tipo: 'erro', texto: mensagemAmigavel(e1 || e2, 'mudar a ordem') });
     await carregar();
   }
 
   async function alternarVisivel(secao) {
     const { error } = await supabase.from('secoes_inicio').update({ visivel: !secao.visivel }).eq('chave', secao.chave);
-    if (error) setMensagem({ tipo: 'erro', texto: error.message });
+    if (error) setMensagem({ tipo: 'erro', texto: mensagemAmigavel(error, 'salvar') });
     await carregar();
   }
 
@@ -173,7 +174,7 @@ function FormBanner({ banner, proximaOrdem, aoVoltar }) {
       aoVoltar();
     } catch (erro) {
       setSalvando(false);
-      setMensagem({ tipo: 'erro', texto: erro.message });
+      setMensagem({ tipo: 'erro', texto: mensagemAmigavel(erro, 'salvar o banner') });
     }
   }
 

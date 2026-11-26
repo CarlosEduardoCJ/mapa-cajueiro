@@ -1,6 +1,7 @@
 // Histórico de alterações (só administradores): quem mudou o quê, com o antes e o depois.
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase.js';
+import { mensagemAmigavel } from '../../lib/erros.js';
 
 const TABELAS = ['locais', 'locais_traducoes', 'fotos', 'mapas', 'marcadores', 'categorias', 'categorias_traducoes', 'eventos', 'eventos_traducoes', 'noticias', 'noticias_traducoes', 'banners', 'banners_traducoes', 'secoes_inicio', 'configuracoes', 'perfis', 'permissoes_editor'];
 
@@ -14,7 +15,7 @@ export default function Historico() {
     let consulta = supabase.from('historico').select('id, tabela, registro_id, acao, usuario_id, antes, depois, criado_em').order('criado_em', { ascending: false }).limit(200);
     if (tabela) consulta = consulta.eq('tabela', tabela);
     consulta.then(({ data, error }) => {
-      if (error) setErro(error.message);
+      if (error) setErro(mensagemAmigavel(error, 'carregar o histórico'));
       setLinhas(data || []);
     });
   }, [tabela]);

@@ -1,8 +1,9 @@
-// Mapa da cidade (público): mapa ilustrado com marcadores lidos do banco.
-// Clicar num marcador dá zoom, escurece o fundo e abre o modal com a ficha do local.
+// Mapa da cidade (público): mapa ilustrado com zoom e arrasto, marcadores lidos do banco.
+// Clicar num logo aproxima, escurece o fundo e abre a ficha. Ao fechar, volta ao enquadramento de antes.
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import FichaLocal from '../components/FichaLocal.jsx';
+import MapaInterativo from '../components/MapaInterativo.jsx';
 import { IconeFechar } from '../components/Icones.jsx';
 import { useIdioma } from '../i18n/IdiomaContext.jsx';
 import { supabase, urlImagem } from '../lib/supabase.js';
@@ -17,14 +18,7 @@ import {
 import { useTitulo } from '../lib/seo.js';
 import { inicial } from '../lib/utils.js';
 
-const FATOR_ZOOM = 2.4; // quanto o mapa aproxima ao clicar num marcador
-
-// Calcula o transform CSS para aproximar o mapa num ponto (x, y entre 0 e 1)
-function transformParaPonto(x, y) {
-  const s = FATOR_ZOOM;
-  const limitar = (v) => Math.max((1 - s) * 100, Math.min(0, v));
-  return `translate(${limitar((0.5 - x * s) * 100)}%, ${limitar((0.5 - y * s) * 100)}%) scale(${s})`;
-}
+const ESCALA_AO_CLICAR = 2.4; // quanto o mapa aproxima ao clicar num logo
 
 export default function MapaCidade() {
   const { lang, t } = useIdioma();
@@ -37,9 +31,12 @@ export default function MapaCidade() {
   const [marcadores, setMarcadores] = useState([]); // { id, x, y, tamanho, local }
 
   const [selecionadoId, setSelecionadoId] = useState(null);
-  const [zoom, setZoom] = useState(false);
   const [modal, setModal] = useState(false);
   const [detalhe, setDetalhe] = useState(null); // ficha do local (FichaLocal)
+
+  // Referência para o mapa (zoom programático) e o enquadramento de antes do clique
+  const mapaRef = useRef(null);
+  const vistaAntesRef = useRef(null);
 
   // Filtros: grupo (ex.: hospedagem) e texto da busca
   const [grupo, setGrupo] = useState(() => params.get('grupo') || 'todos');
@@ -106,37 +103,35 @@ export default function MapaCidade() {
   const filtroAtivo = grupo !== 'todos' || termo !== '';
   const visiveis = marcadores.filter((m) => passaFiltro(m.local));
 
-  const marcadorSelecionado = marcadores.find((m) => m.local.id === selecionadoId) || null;
-
-  // Ao clicar: zoom primeiro, depois o modal (como no protótipo)
+  // Clique num logo: guarda o enquadramento atual, aproxima e abre a ficha
   async function escolher(localId) {
+    const marcador = marcadores.find((m) => m.local.id === localId);
+    if (!marcador) return;
+    if (!vistaAntesRef.current && mapaRef.current) {
+      vistaAntesRef.current = mapaRef.current.obterVista();
+    }
     setSelecionadoId(localId);
-    setZoom(true);
     setModal(false);
     setParams({ local: localId }, { replace: true });
+    mapaRef.current?.focarEm(marcador.x, marcador.y, ESCALA_AO_CLICAR);
     setDetalhe(null);
     const ficha = await carregarFichaLocal({ id: localId }, lang);
     if (ficha) setDetalhe(ficha);
-    depois(() => setModal(true), 700);
+    depois(() => setModal(true), 600);
   }
 
+  // Fechar: esconde a ficha e volta ao enquadramento de antes do clique
   function fechar() {
     setModal(false);
     depois(() => {
-      setZoom(false);
+      if (vistaAntesRef.current) {
+        mapaRef.current?.restaurarVista(vistaAntesRef.current);
+        vistaAntesRef.current = null;
+      }
       setSelecionadoId(null);
       setParams({}, { replace: true });
     }, 120);
   }
-
-  function voltarMapaInteiro() {
-    setZoom(false);
-    setSelecionadoId(null);
-    setModal(false);
-    setParams({}, { replace: true });
-  }
-
-  const mapaT = zoom && marcadorSelecionado ? transformParaPonto(marcadorSelecionado.x, marcadorSelecionado.y) : 'translate(0%, 0%) scale(1)';
 
   if (carregando) {
     return (
@@ -188,46 +183,43 @@ export default function MapaCidade() {
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'flex-start' }}>
-        <div className="mapa-area" style={{ flex: '999 1 600px', minWidth: 0, aspectRatio: proporcao }}>
-          <div className="mapa-imagem" style={{ transform: mapaT }}>
-            <img src={urlImagem(mapa.imagem_path)} alt={t.mapaTitulo} />
-            {marcadores.map((m) => {
-              const casa = passaFiltro(m.local);
-              const pulsa = filtroAtivo && casa && m.local.id !== selecionadoId ? ' pulsa' : '';
-              const fora = casa ? '' : ' fora';
-              return (
-                <button
-                  key={m.id}
-                  className={`marcador${pulsa}${fora}`}
-                  tabIndex={casa ? 0 : -1}
-                  onClick={() => escolher(m.local.id)}
-                  aria-label={m.local.nome}
-                  title={m.local.nome}
-                  style={{ left: `${m.x * 100}%`, top: `${m.y * 100}%`, width: `${m.tamanho * 100}%` }}
-                >
-                  {m.local.logo_path ? (
-                    <img
-                      src={urlImagem(m.local.logo_path)}
-                      alt=""
-                      style={{ width: '100%', height: '100%', borderRadius: '50%', border: '3px solid #fff', boxSizing: 'border-box', background: '#fff', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <span className="marcador-pino">{inicial(m.local.nome)}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {zoom ? (
-            <button
-              className="btn btn-contorno"
-              onClick={voltarMapaInteiro}
-              style={{ position: 'absolute', left: 14, bottom: 14, background: '#fff', boxShadow: '0 4px 14px rgba(0,0,0,.18)' }}
-            >
-              {t.voltarMapa}
-            </button>
-          ) : null}
+        <div style={{ flex: '999 1 600px', minWidth: 0 }}>
+          <MapaInterativo
+            ref={mapaRef}
+            src={urlImagem(mapa.imagem_path)}
+            alt={t.mapaTitulo}
+            proporcao={proporcao}
+            marcadores={() =>
+              marcadores.map((m) => {
+                const casa = passaFiltro(m.local);
+                const pulsa = filtroAtivo && casa && m.local.id !== selecionadoId ? ' pulsa' : '';
+                const fora = casa ? '' : ' fora';
+                return (
+                  <button
+                    key={m.id}
+                    data-marcador
+                    className={`marcador${pulsa}${fora}`}
+                    tabIndex={casa ? 0 : -1}
+                    onClick={() => escolher(m.local.id)}
+                    aria-label={m.local.nome}
+                    title={m.local.nome}
+                    style={{ left: `${m.x * 100}%`, top: `${m.y * 100}%`, width: `${m.tamanho * 100}%` }}
+                  >
+                    {m.local.logo_path ? (
+                      <img
+                        src={urlImagem(m.local.logo_path)}
+                        alt=""
+                        draggable={false}
+                        style={{ width: '100%', height: '100%', borderRadius: '50%', border: '3px solid #fff', boxSizing: 'border-box', background: '#fff', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <span className="marcador-pino">{inicial(m.local.nome)}</span>
+                    )}
+                  </button>
+                );
+              })
+            }
+          />
         </div>
 
         <aside className="cartao" style={{ flex: '1 1 280px', minWidth: 0, padding: 16 }}>

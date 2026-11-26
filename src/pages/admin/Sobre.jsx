@@ -1,6 +1,7 @@
 // Texto da página Sobre, nos três idiomas. Fica na tabela "configuracoes" (chave "sobre").
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase.js';
+import { mensagemAmigavel } from '../../lib/erros.js';
 
 export default function SobreAdmin() {
   const [textos, setTextos] = useState(null);
@@ -30,7 +31,7 @@ export default function SobreAdmin() {
       descricao: 'Texto da página Sobre (pt, en, es)',
     });
     setSalvando(false);
-    setMensagem(error ? { tipo: 'erro', texto: error.message } : { tipo: 'ok', texto: 'Texto da página Sobre salvo.' });
+    setMensagem(error ? { tipo: 'erro', texto: mensagemAmigavel(error, 'salvar o texto') } : { tipo: 'ok', texto: 'Texto da página Sobre salvo.' });
   }
 
   if (!textos) return <p style={{ color: '#4A6380' }}>Carregando…</p>;

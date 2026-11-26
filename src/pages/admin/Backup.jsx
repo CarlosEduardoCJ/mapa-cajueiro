@@ -2,6 +2,7 @@
 // O plano gratuito não tem backup automático, por isso esta rotina deve ser feita de tempos em tempos.
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase.js';
+import { mensagemAmigavel } from '../../lib/erros.js';
 
 // Tabelas com o conteúdo do site (não inclui contas de login, que ficam no Supabase Auth)
 const TABELAS = [
@@ -21,7 +22,7 @@ export default function Backup() {
       const copia = { gerado_em: new Date().toISOString(), tabelas: {} };
       for (const tabela of TABELAS) {
         const { data, error } = await supabase.from(tabela).select('*');
-        if (error) throw new Error(`${tabela}: ${error.message}`);
+        if (error) throw error;
         copia.tabelas[tabela] = data || [];
       }
       const blob = new Blob([JSON.stringify(copia, null, 2)], { type: 'application/json' });
@@ -36,7 +37,7 @@ export default function Backup() {
       URL.revokeObjectURL(url);
       setMensagem({ tipo: 'ok', texto: 'Arquivo baixado. Guarde em outro lugar (pendrive, Google Drive da equipe).' });
     } catch (erro) {
-      setMensagem({ tipo: 'erro', texto: erro.message });
+      setMensagem({ tipo: 'erro', texto: mensagemAmigavel(erro, 'gerar a cópia') });
     }
     setAndamento(false);
   }

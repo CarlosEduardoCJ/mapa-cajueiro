@@ -117,7 +117,7 @@ function Topo({ banner, mapaImagem, linkWa }) {
   const { lang, t, caminho } = useIdioma();
   const { traducao } = escolherIdioma(banner?.banners_traducoes, lang, 'titulo');
   const fotoBanner = banner?.imagem_path ? urlImagem(banner.imagem_path) : '';
-  const imagemMapa = mapaImagem ? urlImagem(mapaImagem) : '/imagens/mapa-ilustrado.jpg';
+  const imagemMapa = mapaImagem ? urlImagem(mapaImagem) : '/demo/mapa.jpg';
 
   return (
     <section className="hero">

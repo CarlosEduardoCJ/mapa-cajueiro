@@ -1,6 +1,7 @@
 // Usuários e permissões (só administradores). A proteção real é o banco; esta tela só organiza os acessos.
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase.js';
+import { mensagemAmigavel } from '../../lib/erros.js';
 
 const MODULOS = [
   { chave: 'locais', rotulo: 'Locais' },
@@ -24,7 +25,7 @@ export default function Usuarios() {
       .from('perfis')
       .select('id, nome, papel, ativo, permissoes_editor ( modulo )')
       .order('nome');
-    if (error) setMensagem({ tipo: 'erro', texto: error.message });
+    if (error) setMensagem({ tipo: 'erro', texto: mensagemAmigavel(error, 'carregar os usuários') });
     setPessoas(data || []);
   }
 
@@ -57,15 +58,15 @@ export default function Usuarios() {
       .from('perfis')
       .update({ nome: editando.nome.trim() || null, papel: editando.papel, ativo: editando.ativo })
       .eq('id', editando.id);
-    if (erroPerfil) return setMensagem({ tipo: 'erro', texto: erroPerfil.message });
+    if (erroPerfil) return setMensagem({ tipo: 'erro', texto: mensagemAmigavel(erroPerfil, 'salvar o acesso') });
 
     // Permissões: apaga as antigas e grava as marcadas (só faz sentido para editores)
     const { error: erroDel } = await supabase.from('permissoes_editor').delete().eq('perfil_id', editando.id);
-    if (erroDel) return setMensagem({ tipo: 'erro', texto: erroDel.message });
+    if (erroDel) return setMensagem({ tipo: 'erro', texto: mensagemAmigavel(erroDel, 'salvar o acesso') });
     if (editando.papel === 'editor' && editando.modulos.length) {
       const linhas = editando.modulos.map((modulo) => ({ perfil_id: editando.id, modulo }));
       const { error: erroIns } = await supabase.from('permissoes_editor').insert(linhas);
-      if (erroIns) return setMensagem({ tipo: 'erro', texto: erroIns.message });
+      if (erroIns) return setMensagem({ tipo: 'erro', texto: mensagemAmigavel(erroIns, 'salvar o acesso') });
     }
     setMensagem({ tipo: 'ok', texto: 'Acesso atualizado.' });
     setEditando(null);

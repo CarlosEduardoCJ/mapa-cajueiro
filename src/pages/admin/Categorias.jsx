@@ -2,6 +2,7 @@
 // Traduções feitas pela equipe (sem tradução automática).
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase.js';
+import { mensagemAmigavel } from '../../lib/erros.js';
 
 const IDIOMAS_ADMIN = [
   { codigo: 'pt', rotulo: 'Português' },
@@ -54,7 +55,7 @@ export default function Categorias() {
     }
     const { error } = await supabase.from('categorias_traducoes').upsert(linhas);
     setSalvandoId(null);
-    setMensagem(error ? { tipo: 'erro', texto: error.message } : { tipo: 'ok', texto: `Nomes de "${nomes[categoria.id].pt}" salvos.` });
+    setMensagem(error ? { tipo: 'erro', texto: mensagemAmigavel(error, 'salvar os nomes') } : { tipo: 'ok', texto: `Nomes de "${nomes[categoria.id].pt}" salvos.` });
   }
 
   return (

@@ -1,6 +1,7 @@
 // Configurações do site (tabela "configuracoes"). A página Sobre tem tela própria, por isso fica de fora aqui.
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase.js';
+import { mensagemAmigavel } from '../../lib/erros.js';
 
 export default function Configuracoes() {
   const [itens, setItens] = useState(null);
@@ -14,7 +15,7 @@ export default function Configuracoes() {
       .neq('chave', 'sobre')
       .order('chave')
       .then(({ data, error }) => {
-        if (error) setMensagem({ tipo: 'erro', texto: error.message });
+        if (error) setMensagem({ tipo: 'erro', texto: mensagemAmigavel(error, 'carregar as configurações') });
         setItens((data || []).map((i) => ({ ...i, texto: typeof i.valor === 'string' ? i.valor : JSON.stringify(i.valor, null, 2) })));
       });
   }, []);
@@ -42,7 +43,7 @@ export default function Configuracoes() {
     }
     const { error } = await supabase.from('configuracoes').update({ valor: item.chave === 'whatsapp_suporte' ? String(valor).replace(/\D/g, '') : valor }).eq('chave', item.chave);
     setSalvandoChave(null);
-    setMensagem(error ? { tipo: 'erro', texto: error.message } : { tipo: 'ok', texto: `"${item.chave}" salvo.` });
+    setMensagem(error ? { tipo: 'erro', texto: mensagemAmigavel(error, 'salvar') } : { tipo: 'ok', texto: `"${item.chave}" salvo.` });
   }
 
   return (

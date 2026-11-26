@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { supabase, urlImagem } from '../../lib/supabase.js';
 import { enviarImagem, nomeUnico } from '../../lib/imagens.js';
 import { gerarSlug } from '../../lib/utils.js';
+import { mensagemAmigavel } from '../../lib/erros.js';
 
 const IDIOMAS = [
   { codigo: 'pt', rotulo: 'Português' },
@@ -56,7 +57,7 @@ export function ListaConteudo({ tipo }) {
       .select(cfg.colunasLista)
       .order(tipo === 'evento' ? 'inicio' : 'publicado_em', { ascending: false })
       .then(({ data, error }) => {
-        if (error) setErro(error.message);
+        if (error) setErro(mensagemAmigavel(error, 'carregar a lista'));
         setItens(data || []);
       });
   }, [tipo, cfg.tabela, cfg.colunasLista]);
@@ -117,6 +118,7 @@ export function FormConteudo({ tipo }) {
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState(null);
+  const [statusOriginal, setStatusOriginal] = useState('rascunho');
 
   useEffect(() => {
     (async () => {
@@ -126,6 +128,7 @@ export function FormConteudo({ tipo }) {
         const colunas = tipo === 'evento' ? '*, eventos_traducoes ( * )' : '*, noticias_traducoes ( * )';
         const { data: item } = await supabase.from(cfg.tabela).select(colunas).eq('id', id).maybeSingle();
         if (item) {
+          setStatusOriginal(item.status || 'rascunho');
           setBase({
             slug: item.slug || '',
             data: tipo === 'evento' ? paraCampoDataHora(item.inicio) : (item.publicado_em || '').slice(0, 10),
@@ -158,6 +161,9 @@ export function FormConteudo({ tipo }) {
     setMensagem(null);
     if (!trads.pt.titulo.trim()) return setMensagem({ tipo: 'erro', texto: 'O título em português é obrigatório.' });
     if (!base.data) return setMensagem({ tipo: 'erro', texto: tipo === 'evento' ? 'Informe a data de início.' : 'Informe a data de publicação.' });
+    if (editando && statusOriginal === 'publicado' && base.status !== 'publicado') {
+      if (!window.confirm(`Este ${tipo === 'evento' ? 'evento' : 'texto'} está publicado e vai sair do site. Deseja continuar?`)) return;
+    }
 
     setSalvando(true);
     try {
@@ -210,14 +216,12 @@ export function FormConteudo({ tipo }) {
       if (!editando) {
         navigate(`${cfg.rota}/${itemId}`, { replace: true });
       } else {
-        setMensagem({ tipo: 'ok', texto: 'Salvo.' });
+        setStatusOriginal(base.status);
+        setMensagem({ tipo: 'ok', texto: 'Salvo! Confira o texto em cada idioma antes de publicar.' });
       }
     } catch (erro) {
       setSalvando(false);
-      const texto = erro?.message?.includes('duplicate key') && erro?.message?.includes('slug')
-        ? 'Já existe um item com este endereço (slug). Mude o título ou o endereço.'
-        : erro?.message || 'Não foi possível salvar.';
-      setMensagem({ tipo: 'erro', texto });
+      setMensagem({ tipo: 'erro', texto: mensagemAmigavel(erro, 'salvar') });
     }
   }
 

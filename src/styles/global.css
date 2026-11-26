@@ -334,7 +334,74 @@ textarea {
   background: #fff;
 }
 
-/* ---------- Mapa interativo ---------- */
+/* ---------- Mapa interativo (zoom e arrasto: ver src/components/MapaInterativo.jsx) ---------- */
+.mapa-area {
+  touch-action: none; /* o dedo arrasta o mapa, não rola a página */
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+.mapa-area:active {
+  cursor: grabbing;
+}
+.mapa-camada {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.mapa-camada > img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+/* Marcadores: posição em % da imagem, tamanho ajustado pelo zoom (variável --k) */
+.mapa-area .marcador {
+  transform: translate(-50%, -50%) scale(var(--k, 1));
+}
+.mapa-controles {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 2;
+}
+.mapa-controles button {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 0;
+  background: #fff;
+  color: var(--azul);
+  font: 800 24px Nunito, sans-serif;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+.mapa-controles button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.mapa-inteiro-botao {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 2;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 0;
+  background: #fff;
+  color: var(--azul);
+  font: 800 15px Nunito, sans-serif;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+
+/* ---------- Mapa interativo (estilos dos marcadores) ---------- */
 .mapa-area {
   position: relative;
   aspect-ratio: 3 / 2;
@@ -342,7 +409,6 @@ textarea {
   overflow: hidden;
   box-shadow: 0 14px 40px rgba(26, 95, 180, 0.18);
   background: #bfe3f7;
-  touch-action: manipulation;
 }
 .mapa-imagem {
   position: absolute;
@@ -679,4 +745,103 @@ textarea {
   .admin-conteudo {
     padding: 16px;
   }
+}
+
+/* ---------- Painel: filtros, etiquetas de status e números ---------- */
+.barra-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.barra-filtros > * {
+  flex: 1 1 200px;
+  min-height: 44px;
+  border: 1.5px solid var(--borda);
+  border-radius: 14px;
+  padding: 8px 12px;
+  background: #fff;
+  color: var(--azul-texto);
+  font-weight: 600;
+}
+.campo-busca {
+  flex: 2 1 260px !important;
+}
+.etiqueta-status {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 3px 10px;
+  margin: 2px 4px 2px 0;
+  white-space: nowrap;
+}
+.etiqueta-rascunho {
+  background: #fff1c2;
+  color: #7a5600;
+}
+.etiqueta-publicado {
+  background: #e6f6ea;
+  color: #155f2a;
+}
+.etiqueta-inativo {
+  background: #e9edf2;
+  color: #4a5562;
+}
+.etiqueta-demo-lista {
+  background: #efe6fb;
+  color: #5b2e9a;
+}
+.grade-numeros {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+}
+.numero-cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px;
+}
+
+/* Fotos no formulário do local: prévia, setas de ordem e remover */
+.lista-fotos-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.foto-editor {
+  width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+.foto-editor img {
+  width: 150px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 12px;
+  background: #e3eefb;
+}
+.foto-editor-botoes {
+  display: flex;
+  gap: 4px;
+}
+.foto-editor-botoes button {
+  flex: 1 1 0;
+  min-height: 40px;
+  border-radius: 10px;
+  border: 1.5px solid var(--borda);
+  background: #fff;
+  color: var(--azul);
+  font: 800 14px Nunito, sans-serif;
+  cursor: pointer;
+}
+.foto-editor-botoes button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.foto-editor-botoes button.remover {
+  color: #a4262c;
+  border-color: #e5b3b5;
 }

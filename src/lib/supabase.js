@@ -13,8 +13,12 @@ export const supabase = configuracaoOk ? createClient(url, chave) : null;
 // Nome do bucket de imagens (criado no banco pelas migrações)
 export const BUCKET_MIDIA = 'midia';
 
-// Monta o endereço público de uma imagem guardada no bucket "midia"
+// Monta o endereço de uma imagem.
+// - Caminho que começa com "/" é um arquivo do próprio site (pasta public), ex.: /demo/mapa.jpg
+// - Caminho sem "/" é uma imagem guardada no bucket "midia" do Supabase, ex.: locais/<id>/logo.webp
 export function urlImagem(caminho) {
-  if (!caminho || !url) return '';
+  if (!caminho) return '';
+  if (caminho.startsWith('/')) return caminho;
+  if (!url) return '';
   return `${url}/storage/v1/object/public/${BUCKET_MIDIA}/${caminho}`;
 }
