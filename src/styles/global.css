@@ -483,6 +483,58 @@ textarea {
   color: #1a3e6e;
 }
 
+/* Faixa de categorias da página inicial */
+.catb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 104px;
+  padding: 10px 4px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font: 700 13px Nunito, sans-serif;
+  color: #1a3e6e;
+  text-decoration: none;
+}
+.catb-icone {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #e3eefb;
+  color: #1a5fb4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.catb:hover .catb-icone {
+  background: #f7c21a;
+  color: #1a3e6e;
+}
+
+/* Botões de filtro (chips) */
+.chip {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1.5px solid #cfe0f5;
+  background: #fff;
+  color: #1a3e6e;
+  font: 700 14px Nunito, sans-serif;
+  cursor: pointer;
+}
+.chip.sel {
+  background: #1a5fb4;
+  border-color: #1a5fb4;
+  color: #fff;
+}
+
+.marcador.fora {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
 .linha-lista:hover,
 .cartao-local:hover {
   background: #eef5ff !important;

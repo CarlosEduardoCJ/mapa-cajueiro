@@ -17,3 +17,29 @@ export const COLUNAS_LOCAL_PUBLICO = `
   endereco, latitude, longitude, horario_funcionamento, eh_demonstracao,
   categorias ( slug, categorias_traducoes ( nome, idioma ) )
 `;
+
+// Grupos do menu de filtros (como no protótipo). Cada grupo junta categorias do banco pelo slug.
+export const GRUPOS = [
+  { chave: 'hosp', rotulo: 'Hospedagem', slugs: ['pousadas', 'hoteis'] },
+  { chave: 'gastro', rotulo: 'Gastronomia', slugs: ['restaurantes', 'bares', 'padarias', 'cafes'] },
+  { chave: 'comercio', rotulo: 'Comércio', slugs: ['mercantis', 'lojas', 'servicos', 'outros'] },
+  { chave: 'saude', rotulo: 'Farmácias', slugs: ['farmacias'] },
+  { chave: 'turismo', rotulo: 'Pontos turísticos', tipo: 'ponto_turistico' },
+];
+
+// Descobre a qual grupo um local pertence (ou null)
+export function grupoDoLocal(local) {
+  const slug = local?.categorias?.slug;
+  return (
+    GRUPOS.find((g) => (g.tipo ? local?.tipo === g.tipo : g.slugs.includes(slug))) || null
+  );
+}
+
+// Deixa o texto minúsculo e sem acentos, para comparar na busca
+export function normalizarTexto(texto) {
+  return (texto || '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim();
+}

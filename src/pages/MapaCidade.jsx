@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { supabase, urlImagem } from '../lib/supabase.js';
-import { COLUNAS_LOCAL_PUBLICO, nomeCategoria, traducaoPt } from '../lib/locais.js';
+import { COLUNAS_LOCAL_PUBLICO, GRUPOS, grupoDoLocal, nomeCategoria, normalizarTexto, traducaoPt } from '../lib/locais.js';
 import { inicial, linkGoogleMaps, linkWaze, linkWhatsApp } from '../lib/utils.js';
 import { IconeFechar, IconeLocal, IconeSeta, IconeWhatsApp } from '../components/Icones.jsx';
 
@@ -30,6 +30,10 @@ export default function MapaCidade() {
   const [modal, setModal] = useState(false);
   const [detalhe, setDetalhe] = useState(null); // { local, traducao, fotos }
   const [carregandoDetalhe, setCarregandoDetalhe] = useState(false);
+
+  // Filtros: grupo (ex.: hospedagem) e texto da busca
+  const [grupo, setGrupo] = useState(() => params.get('grupo') || 'todos');
+  const [busca, setBusca] = useState('');
 
   const timers = useRef([]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
@@ -78,6 +82,16 @@ export default function MapaCidade() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [marcadores]);
+
+  // Diz se um local passa pelos filtros de grupo e de busca
+  const termo = normalizarTexto(busca);
+  function passaFiltro(local) {
+    const dentroDoGrupo = grupo === 'todos' || grupoDoLocal(local)?.chave === grupo;
+    const textoDoLocal = normalizarTexto(`${local.nome} ${nomeCategoria(local)}`);
+    return dentroDoGrupo && (!termo || textoDoLocal.includes(termo));
+  }
+  const filtroAtivo = grupo !== 'todos' || termo !== '';
+  const visiveis = marcadores.filter((m) => passaFiltro(m.local));
 
   const marcadorSelecionado = useMemo(
     () => marcadores.find((m) => m.local.id === selecionadoId) || null,
@@ -149,16 +163,41 @@ export default function MapaCidade() {
         Explore Cajueiro da Praia! Toque em um logo.
       </p>
 
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBottom: 14 }}>
+        <label style={{ position: 'relative', flex: '1 1 260px', display: 'flex', alignItems: 'center', gap: 8, background: '#fff', border: '1.5px solid #CFE0F5', borderRadius: 999, padding: '0 16px', minHeight: 44 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A6380" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-4-4" />
+          </svg>
+          <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden' }}>Buscar por nome ou categoria</span>
+          <input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar por nome ou categoria"
+            style={{ flex: 1, border: 0, outline: 'none', font: '600 15px Nunito, sans-serif', background: 'transparent', color: '#18324F', minWidth: 0 }}
+          />
+        </label>
+        <button className={`chip${grupo === 'todos' ? ' sel' : ''}`} onClick={() => setGrupo('todos')}>Todos</button>
+        {GRUPOS.map((g) => (
+          <button key={g.chave} className={`chip${grupo === g.chave ? ' sel' : ''}`} onClick={() => setGrupo(g.chave)}>
+            {g.rotulo}
+          </button>
+        ))}
+      </div>
+
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'flex-start' }}>
         <div className="mapa-area" style={{ flex: '999 1 600px', minWidth: 0, aspectRatio: proporcao }}>
           <div className="mapa-imagem" style={{ transform: mapaT }}>
             <img src={urlImagem(mapa.imagem_path)} alt="Mapa ilustrado de Cajueiro da Praia" />
             {marcadores.map((m) => {
-              const pulsa = m.local.id === selecionadoId ? '' : ' pulsa';
+              const casa = passaFiltro(m.local);
+              const pulsa = filtroAtivo && casa && m.local.id !== selecionadoId ? ' pulsa' : '';
+              const fora = casa ? '' : ' fora';
               return (
                 <button
                   key={m.id}
-                  className={`marcador${pulsa}`}
+                  className={`marcador${pulsa}${fora}`}
+                  tabIndex={casa ? 0 : -1}
                   onClick={() => escolher(m.local.id)}
                   aria-label={m.local.nome}
                   title={m.local.nome}
@@ -191,13 +230,16 @@ export default function MapaCidade() {
 
         <aside className="cartao" style={{ flex: '1 1 280px', minWidth: 0, padding: 16 }}>
           <p style={{ margin: '0 0 8px 6px', fontWeight: 800, color: '#4A6380', fontSize: 13 }}>
-            {marcadores.length} locais no mapa
+            {visiveis.length} {visiveis.length === 1 ? 'local' : 'locais'}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 560, overflow: 'auto' }}>
             {marcadores.length === 0 ? (
               <p style={{ margin: 8, color: '#4A6380' }}>Nenhum local publicado no mapa ainda.</p>
             ) : null}
-            {marcadores.map((m) => (
+            {marcadores.length > 0 && visiveis.length === 0 ? (
+              <p style={{ margin: 8, color: '#4A6380' }}>Nenhum local encontrado. Tente outra busca ou filtro.</p>
+            ) : null}
+            {visiveis.map((m) => (
               <button
                 key={m.id}
                 onClick={() => escolher(m.local.id)}
