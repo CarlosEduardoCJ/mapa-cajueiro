@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Mapa Cajueiro — protótipo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&amp;family=Damion&amp;family=Lily+Script+One&amp;family=Nunito:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F9FF}
+a{color:#1A5FB4}a:hover{color:#124A8E}
+.mk{position:absolute;transform:translate(-50%,-50%);aspect-ratio:1;border-radius:50%;border:3px solid rgba(247,194,26,0);background:transparent;cursor:pointer;padding:0;transition:border-color .2s,background .2s,box-shadow .2s}
+.mk:hover,.mk:focus-visible{border-color:#F7C21A;box-shadow:0 0 0 6px rgba(247,194,26,.35);outline:none}
+.mk.off{background:rgba(255,255,255,.78);border-color:rgba(255,255,255,.9);pointer-events:none}
+.mk.on{animation:pulse 2.2s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(247,194,26,.7)}70%{box-shadow:0 0 0 14px rgba(247,194,26,0)}100%{box-shadow:0 0 0 0 rgba(247,194,26,0)}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 20px;border-radius:999px;font:800 15px Nunito,sans-serif;text-decoration:none;border:0;cursor:pointer}
+.chip{min-height:40px;padding:0 16px;border-radius:999px;border:1.5px solid #CFE0F5;background:#fff;color:#1A3E6E;font:700 14px Nunito,sans-serif;cursor:pointer}
+.chip.sel{background:#1A5FB4;border-color:#1A5FB4;color:#fff}
+.catb{display:flex;flex-direction:column;align-items:center;gap:8px;width:104px;padding:10px 4px;background:none;border:0;cursor:pointer;font:700 13px Nunito,sans-serif;color:#1A3E6E;text-decoration:none}
+.catb:hover .ic{background:#F7C21A;color:#1A3E6E}
+.row:hover{background:#EEF5FF}
+.nav{background:none;border:0;border-bottom:3px solid transparent;padding:8px 2px;cursor:pointer;font:800 18px Nunito,sans-serif;color:#1A4F96}
+.nav.sel{border-bottom-color:#F7C21A;color:#1A5FB4}
+.lp{width:56px;height:56px;border-radius:50%;border:2px solid #BFD4EE;background:#fff;color:#1A4F96;font:800 17px Nunito,sans-serif;cursor:pointer}
+.lp.sel{background:#2D6FD0;border-color:#2D6FD0;color:#fff;box-shadow:0 4px 12px rgba(26,95,180,.3)}
+</style>
+</helmet>
+<div style="min-height: 100vh; font-family: Nunito, system-ui, sans-serif; color: #18324F; background: #F4F9FF">
+
+<sc-if value="{{isLang}}" hint-placeholder-val="{{ false }}">
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; background: #DDEEFC">
+<div style="width: 100%; max-width: 560px; background: #fff; border-radius: 28px; box-shadow: 0 20px 60px rgba(26,95,180,.18); padding: 36px 28px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 22px; text-align: center">
+<img src="/_blob/a896a240f85c243c35440bbc22def4a8" alt="Descubra Cajueiro da Praia — Mapa Turístico" style="width: 100%; max-width: 380px; height: auto">
+<h1 style="margin: 0; font: 400 30px Pacifico, cursive; color: #1A5FB4">Idioma · Language · Idioma</h1>
+<div style="display: flex; flex-direction: column; gap: 12px; width: 100%">
+<button onClick="{{choosePt}}" style="display: flex; align-items: center; gap: 16px; min-height: 68px; padding: 0 22px; border-radius: 20px; border: 2px solid #CFE0F5; background: #fff; cursor: pointer; font: 800 20px Nunito, sans-serif; color: #18324F"><span style="width: 48px; height: 48px; border-radius: 50%; background: #1A5FB4; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px">PT</span>Português</button>
+<button onClick="{{chooseEn}}" style="display: flex; align-items: center; gap: 16px; min-height: 68px; padding: 0 22px; border-radius: 20px; border: 2px solid #CFE0F5; background: #fff; cursor: pointer; font: 800 20px Nunito, sans-serif; color: #18324F"><span style="width: 48px; height: 48px; border-radius: 50%; background: #1A5FB4; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px">EN</span>English</button>
+<button onClick="{{chooseEs}}" style="display: flex; align-items: center; gap: 16px; min-height: 68px; padding: 0 22px; border-radius: 20px; border: 2px solid #CFE0F5; background: #fff; cursor: pointer; font: 800 20px Nunito, sans-serif; color: #18324F"><span style="width: 48px; height: 48px; border-radius: 50%; background: #1A5FB4; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px">ES</span>Español</button>
+</div>
+<p style="margin: 0; font-size: 14px; color: #4A6380">A escolha fica salva neste navegador · Saved in this browser · Se guarda en este navegador</p>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isSite}}" hint-placeholder-val="{{ true }}">
+<div style="background: #F7C21A; color: #3A2C00; font-size: 13px; font-weight: 700; text-align: center; padding: 8px 16px">{{t.demo}}</div>
+
+<header style="position: sticky; top: 0; z-index: 20; background: #fff; box-shadow: 0 2px 14px rgba(26,95,180,.10)">
+<div style="max-width: 1320px; margin: 0 auto; padding: 10px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px">
+<button onClick="{{goHome}}" aria-label="Mapa Cajueiro — início" style="background: none; border: 0; padding: 0; cursor: pointer"><img src="/_blob/a896a240f85c243c35440bbc22def4a8" alt="" style="height: 64px; width: auto; display: block"></button>
+<nav style="display: flex; flex-wrap: wrap; gap: 6px 30px; flex: 1 1 auto; padding-left: 20px">
+<button onClick="{{goHome}}" class="{{navHome}}">{{t.nav_home}}</button>
+<button onClick="{{goMapAll}}" class="{{navMap}}">{{t.nav_map}}</button>
+<button onClick="{{goContact}}" class="{{navContact}}">{{t.nav_contact}}</button>
+</nav>
+<div style="display: flex; gap: 8px; align-items: center" role="group" aria-label="Idioma">
+<sc-for list="{{langs}}" as="l" hint-placeholder-count="3">
+<button onClick="{{l.pick}}" class="{{l.cls}}">{{l.code}}</button>
+</sc-for>
+</div>
+<a href="{{waGeneral}}" target="_blank" rel="noopener" class="btn" style="background: #25A244; color: #fff; min-height: 54px; padding: 0 24px; font-size: 17px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21l1.7-5A8.5 8.5 0 1 1 8 19.3z"></path><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a3.5 3.5 0 0 1-2-2l1-1-1-2z"></path></svg>{{t.support}}</a>
+</div>
+</header>
+
+<sc-if value="{{isHome}}" hint-placeholder-val="{{ true }}">
+<section style="position: relative; overflow: hidden; min-height: 640px; display: flex; align-items: center; background: #F39A3D">
+<svg viewBox="0 0 1600 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%">
+<defs>
+<linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E9682A"></stop><stop offset=".45" stop-color="#F59A3A"></stop><stop offset=".72" stop-color="#FFC765"></stop><stop offset="1" stop-color="#FFE3A0"></stop></linearGradient>
+<radialGradient id="brilho" cx=".2" cy=".52" r=".45"><stop offset="0" stop-color="#FFF6D6" stop-opacity=".95"></stop><stop offset=".25" stop-color="#FFE08A" stop-opacity=".6"></stop><stop offset="1" stop-color="#FFE08A" stop-opacity="0"></stop></radialGradient>
+<linearGradient id="mar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6B5A6E"></stop><stop offset=".3" stop-color="#2F3D5C"></stop><stop offset="1" stop-color="#121D36"></stop></linearGradient>
+<g id="coqueiro"><path d="M0 0 C 6 -60, -4 -120, 14 -190" fill="none" stroke="#2A170F" stroke-width="9" stroke-linecap="round"></path><path d="M14 -190 C -20 -205, -50 -190, -70 -160 M14 -190 C 50 -210, 85 -195, 105 -165 M14 -190 C -5 -225, -35 -235, -60 -232 M14 -190 C 35 -230, 65 -240, 90 -236 M14 -190 C 0 -160, -15 -140, -28 -118 M14 -190 C 35 -165, 50 -145, 58 -122" fill="none" stroke="#2A170F" stroke-width="7" stroke-linecap="round"></path></g>
+</defs>
+<rect width="1600" height="800" fill="url(#ceu)"></rect>
+<rect width="1600" height="800" fill="url(#brilho)"></rect>
+<circle cx="320" cy="430" r="95" fill="#FFF3C8"></circle>
+<rect y="548" width="1600" height="252" fill="url(#mar)"></rect>
+<g fill="#FFD27A" opacity=".75"><rect x="250" y="566" width="140" height="5" rx="2.5"></rect><rect x="215" y="588" width="210" height="5" rx="2.5"></rect><rect x="265" y="612" width="120" height="6" rx="3"></rect><rect x="190" y="640" width="260" height="6" rx="3"></rect><rect x="245" y="672" width="160" height="7" rx="3.5"></rect><rect x="160" y="708" width="320" height="8" rx="4"></rect></g>
+<path d="M0 520 C 120 505, 260 515, 420 528 C 560 538, 760 532, 980 540 L 1600 552 L 1600 560 L 0 560 Z" fill="#2A170F"></path>
+<use href="#coqueiro" transform="translate(40 540) scale(1.1)"></use>
+<use href="#coqueiro" transform="translate(120 545) scale(.85) rotate(-6)"></use>
+<use href="#coqueiro" transform="translate(470 538) scale(.95) rotate(5)"></use>
+<use href="#coqueiro" transform="translate(560 540) scale(.7) rotate(-4)"></use>
+<use href="#coqueiro" transform="translate(760 542) scale(1.05) rotate(3)"></use>
+<use href="#coqueiro" transform="translate(860 545) scale(.75) rotate(-8)"></use>
+<use href="#coqueiro" transform="translate(940 546) scale(.9)"></use>
+</svg>
+<div style="position: relative; z-index: 1; width: 100%; max-width: 1320px; margin: 0 auto; padding: 56px 24px 72px; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 40px">
+<div style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; position: relative">
+<svg width="120" height="90" viewBox="0 0 120 90" aria-hidden="true" style="position: absolute; left: 4%; top: -18px"><g stroke="#F7C21A" stroke-width="9" stroke-linecap="round"><path d="M70 70 L 30 40"></path><path d="M78 52 L 58 12"></path><path d="M62 82 L 14 76"></path></g></svg>
+<svg width="110" height="90" viewBox="0 0 110 90" aria-hidden="true" style="position: absolute; right: 8%; top: -6px"><g stroke="#F7C21A" stroke-width="9" stroke-linecap="round"><path d="M20 72 L 60 40"></path><path d="M14 54 L 40 12"></path><path d="M30 84 L 84 78"></path></g></svg>
+<p style="margin: 0; font: 400 clamp(64px, 8vw, 112px)/1 Damion, cursive; color: #1A5FB4; text-shadow: 3px 3px 0 #fff, -3px 3px 0 #fff, 3px -3px 0 #fff, -3px -3px 0 #fff, 0 3px 0 #fff, 0 -3px 0 #fff, 3px 0 0 #fff, -3px 0 0 #fff, 0 8px 18px rgba(0,0,0,.25)">{{t.hero_pre}}</p>
+<h1 style="margin: 0; font: 400 clamp(54px, 7.4vw, 112px)/1.05 'Lily Script One', cursive; color: #1550A8; text-shadow: 5px 5px 0 #fff, -5px 5px 0 #fff, 5px -5px 0 #fff, -5px -5px 0 #fff, 0 6px 0 #fff, 0 -6px 0 #fff, 6px 0 0 #fff, -6px 0 0 #fff, 0 14px 24px rgba(0,0,0,.3)">Cajueiro da Praia</h1>
+<p style="margin: 18px 0 0; font-size: clamp(19px, 2vw, 26px); font-weight: 700; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,.55); max-width: 640px">{{t.hero_sub}}</p>
+<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; margin-top: 28px">
+<button onClick="{{goMapAll}}" class="btn" style="background: #F7C21A; color: #18324F; min-height: 64px; padding: 0 34px; font-size: 20px; box-shadow: 0 8px 20px rgba(0,0,0,.25)">{{t.cta_map}}<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+<a href="{{waGeneral}}" target="_blank" rel="noopener" class="btn" style="background: #fff; color: #1A7A35; min-height: 64px; padding: 0 30px; font-size: 20px; border: 3px solid #25A244; box-shadow: 0 8px 20px rgba(0,0,0,.25)"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#25A244" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21l1.7-5A8.5 8.5 0 1 1 8 19.3z"></path><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a3.5 3.5 0 0 1-2-2l1-1-1-2z"></path></svg>{{t.cta_wa}}</a>
+</div>
+</div>
+<div style="flex: 1 1 480px; min-width: 0; position: relative; padding: 24px 12px">
+<svg width="70" height="70" viewBox="0 0 70 70" aria-hidden="true" style="position: absolute; right: -6px; top: -8px; z-index: 2"><g stroke="#fff" stroke-width="7" stroke-linecap="round"><path d="M14 40 L 22 8"></path><path d="M30 48 L 60 30"></path><path d="M32 62 L 64 62"></path></g></svg>
+<button onClick="{{goMapAll}}" aria-label="{{t.cta_map}}" style="display: block; width: 100%; padding: 0; border: 10px solid #fff; border-radius: 30px; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,.35); cursor: pointer; transform: rotate(-4deg); background: #fff"><img src="/_blob/9cba88558f507b11fbd716d81b28d1c5" alt="" style="display: block; width: 100%; height: auto"></button>
+</div>
+</div>
+</section>
+
+<section style="max-width: 1240px; margin: -28px auto 0; padding: 0 20px; position: relative">
+<div style="background: #fff; border-radius: 24px; box-shadow: 0 10px 30px rgba(26,95,180,.12); padding: 18px 12px">
+<h2 style="margin: 0 0 6px; text-align: center; font-size: 15px; font-weight: 800; color: #4A6380; letter-spacing: .04em; text-transform: uppercase">{{t.cats_title}}</h2>
+<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 4px">
+<button onClick="{{goMapHosp}}" class="catb"><span class="ic" style="width: 56px; height: 56px; border-radius: 50%; background: #E3EEFB; color: #1A5FB4; display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18V7M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5"></path><circle cx="7" cy="11" r="2"></circle></svg></span>{{t.cat_hosp}}</button>
+<button onClick="{{goMapGastro}}" class="catb"><span class="ic" style="width: 56px; height: 56px; border-radius: 50%; background: #E3EEFB; color: #1A5FB4; display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M17 3c-2 2-3 5-3 8h3v10"></path></svg></span>{{t.cat_gastro}}</button>
+<button onClick="{{goMapComercio}}" class="catb"><span class="ic" style="width: 56px; height: 56px; border-radius: 50%; background: #E3EEFB; color: #1A5FB4; display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1 13H6zM9 8a3 3 0 0 1 6 0"></path></svg></span>{{t.cat_comercio}}</button>
+<button onClick="{{goMapSaude}}" class="catb"><span class="ic" style="width: 56px; height: 56px; border-radius: 50%; background: #E3EEFB; color: #1A5FB4; display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M12 8v8M8 12h8"></path></svg></span>{{t.cat_saude}}</button>
+<button onClick="{{goMapTurismo}}" class="catb"><span class="ic" style="width: 56px; height: 56px; border-radius: 50%; background: #E3EEFB; color: #1A5FB4; display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9M12 12c-1-4-5-5-8-4 3-3 7-2 8 1 1-3 5-4 8-1-3-1-7 0-8 4zM4 21h16"></path></svg></span>{{t.cat_turismo}}</button>
+<a href="#eventos" class="catb"><span class="ic" style="width: 56px; height: 56px; border-radius: 50%; background: #E3EEFB; color: #1A5FB4; display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg></span>{{t.cat_events}}</a>
+<a href="#noticias" class="catb"><span class="ic" style="width: 56px; height: 56px; border-radius: 50%; background: #E3EEFB; color: #1A5FB4; display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"></rect><path d="M7 9h10M7 13h10M7 17h6"></path></svg></span>{{t.cat_news}}</a>
+</div>
+</div>
+</section>
+
+<section style="max-width: 1240px; margin: 0 auto; padding: 48px 20px 8px">
+<h2 style="margin: 0; font: 400 34px Pacifico, cursive; color: #1A5FB4">{{t.feat_title}}</h2>
+<p style="margin: 4px 0 20px; color: #4A6380; font-size: 16px">{{t.feat_sub}}</p>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px">
+<sc-for list="{{places}}" as="p" hint-placeholder-count="6">
+<button onClick="{{p.openFromHome}}" style="display: flex; align-items: center; gap: 14px; text-align: left; background: #fff; border: 0; border-radius: 20px; padding: 14px; box-shadow: 0 6px 20px rgba(26,95,180,.10); cursor: pointer; font-family: Nunito, sans-serif">
+<sc-if value="{{p.logo}}" hint-placeholder-val="{{ true }}"><img src="{{p.logo}}" alt="" style="width: 56px; height: 56px; border-radius: 50%; flex: none"></sc-if>
+<sc-if value="{{p.noLogo}}" hint-placeholder-val="{{ false }}"><span style="width: 56px; height: 56px; border-radius: 50%; flex: none; background: #1A5FB4; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px">{{p.initial}}</span></sc-if>
+<span style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+<span style="font-weight: 800; font-size: 16px; color: #18324F">{{p.name}}</span>
+<span style="font-size: 13px; color: #4A6380">{{p.catLabel}}</span>
+<span style="align-self: flex-start; font-size: 11px; font-weight: 800; color: #7A5600; background: #FFF1C2; border-radius: 999px; padding: 2px 8px">{{t.demo_tag}}</span>
+</span>
+</button>
+</sc-for>
+</div>
+</section>
+
+<section style="max-width: 1240px; margin: 0 auto; padding: 40px 20px 8px; display: flex; flex-wrap: wrap; gap: 20px">
+<div id="eventos" style="flex: 1 1 360px; min-width: 0; background: #fff; border-radius: 24px; padding: 24px; box-shadow: 0 6px 20px rgba(26,95,180,.08)">
+<h2 style="margin: 0 0 10px; font: 400 30px Pacifico, cursive; color: #1A5FB4">{{t.ev_title}}</h2>
+<p style="margin: 0; color: #4A6380; line-height: 1.5; border: 2px dashed #CFE0F5; border-radius: 16px; padding: 18px">{{t.ev_empty}}</p>
+</div>
+<div id="noticias" style="flex: 1 1 360px; min-width: 0; background: #fff; border-radius: 24px; padding: 24px; box-shadow: 0 6px 20px rgba(26,95,180,.08)">
+<h2 style="margin: 0 0 10px; font: 400 30px Pacifico, cursive; color: #1A5FB4">{{t.nw_title}}</h2>
+<p style="margin: 0; color: #4A6380; line-height: 1.5; border: 2px dashed #CFE0F5; border-radius: 16px; padding: 18px">{{t.nw_empty}}</p>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{isMap}}" hint-placeholder-val="{{ false }}">
+<section style="max-width: 1320px; margin: 0 auto; padding: 28px 20px 8px">
+<h1 style="margin: 0; text-align: center; font: 400 40px Pacifico, cursive; color: #1A5FB4">{{t.map_title}}</h1>
+<p style="margin: 2px 0 18px; text-align: center; color: #4A6380; font-size: 16px">{{t.map_sub}}</p>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px">
+<label style="flex: 1 1 260px; display: flex; align-items: center; gap: 8px; background: #fff; border: 1.5px solid #CFE0F5; border-radius: 999px; padding: 0 16px; min-height: 44px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A6380" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden">{{t.search}}</span>
+<input value="{{q}}" onChange="{{onQ}}" placeholder="{{t.search}}" style="flex: 1; border: 0; outline: none; font: 600 15px Nunito, sans-serif; background: transparent; color: #18324F; min-width: 0">
+</label>
+<sc-for list="{{chips}}" as="c" hint-placeholder-count="6">
+<button onClick="{{c.pick}}" class="{{c.cls}}">{{c.label}}</button>
+</sc-for>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start">
+<div style="flex: 999 1 600px; min-width: 0; position: relative; aspect-ratio: 3 / 2; border-radius: 24px; overflow: hidden; box-shadow: 0 14px 40px rgba(26,95,180,.18); background: #BFE3F7">
+<div style="position: absolute; inset: 0; transform-origin: 0 0; transform: {{mapT}}; transition: transform .7s cubic-bezier(.2,.7,.2,1)">
+<img src="/_blob/9cba88558f507b11fbd716d81b28d1c5" alt="Mapa ilustrado de Cajueiro da Praia" style="display: block; width: 100%; height: 100%">
+<sc-for list="{{markers}}" as="m" hint-placeholder-count="9">
+<button onClick="{{m.pick}}" aria-label="{{m.name}}" title="{{m.name}}" class="{{m.cls}}" style="{{m.pos}}">
+<sc-if value="{{m.pin}}" hint-placeholder-val="{{ false }}"><span style="display: flex; width: 100%; height: 100%; border-radius: 50%; background: #1A5FB4; color: #fff; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,.3); border: 3px solid #fff; box-sizing: border-box; font: 800 13px Nunito, sans-serif">{{m.initial}}</span></sc-if>
+</button>
+</sc-for>
+</div>
+<sc-if value="{{zoom}}" hint-placeholder-val="{{ false }}">
+<button onClick="{{closeModal}}" class="btn" style="position: absolute; left: 14px; bottom: 14px; background: #fff; color: #1A5FB4; box-shadow: 0 4px 14px rgba(0,0,0,.18)">{{t.back_view}}</button>
+</sc-if>
+</div>
+<aside style="flex: 1 1 280px; min-width: 0; background: #fff; border-radius: 24px; box-shadow: 0 8px 24px rgba(26,95,180,.10); padding: 16px; box-sizing: border-box">
+<p style="margin: 0 0 8px 6px; font-weight: 800; color: #4A6380; font-size: 13px">{{count}} {{t.results}}</p>
+<div style="display: flex; flex-direction: column; gap: 2px; max-height: 560px; overflow: auto">
+<sc-for list="{{filtered}}" as="p" hint-placeholder-count="6">
+<button onClick="{{p.pick}}" class="row" style="display: flex; align-items: center; gap: 12px; text-align: left; background: none; border: 0; border-radius: 14px; padding: 8px; cursor: pointer; font-family: Nunito, sans-serif; min-height: 56px">
+<sc-if value="{{p.logo}}" hint-placeholder-val="{{ true }}"><img src="{{p.logo}}" alt="" style="width: 42px; height: 42px; border-radius: 50%; flex: none"></sc-if>
+<sc-if value="{{p.noLogo}}" hint-placeholder-val="{{ false }}"><span style="width: 42px; height: 42px; border-radius: 50%; flex: none; background: #1A5FB4; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800">{{p.initial}}</span></sc-if>
+<span style="display: flex; flex-direction: column; min-width: 0"><span style="font-weight: 800; color: #18324F; font-size: 15px">{{p.name}}</span><span style="font-size: 13px; color: #4A6380">{{p.catLabel}}</span></span>
+</button>
+</sc-for>
+<sc-if value="{{empty}}" hint-placeholder-val="{{ false }}"><p style="margin: 8px 6px; color: #4A6380">{{t.none}}</p></sc-if>
+</div>
+</aside>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{isContact}}" hint-placeholder-val="{{ false }}">
+<section style="max-width: 1000px; margin: 0 auto; padding: 40px 20px 8px">
+<h1 style="margin: 0; font: 400 42px Pacifico, cursive; color: #1A5FB4">{{t.contact_title}}</h1>
+<p style="margin: 6px 0 24px; color: #4A6380; font-size: 17px">{{t.contact_sub}}</p>
+<div style="display: flex; flex-wrap: wrap; gap: 20px">
+<div style="flex: 1 1 380px; min-width: 0; background: #fff; border-radius: 24px; padding: 28px; box-shadow: 0 8px 24px rgba(26,95,180,.10); display: flex; flex-direction: column; gap: 14px">
+<span style="width: 60px; height: 60px; border-radius: 50%; background: #E6F6EA; color: #1A7A35; display: flex; align-items: center; justify-content: center"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21l1.7-5A8.5 8.5 0 1 1 8 19.3z"></path><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a3.5 3.5 0 0 1-2-2l1-1-1-2z"></path></svg></span>
+<p style="margin: 0; font-weight: 800; font-size: 22px">+55 86 99993-3162</p>
+<a href="{{waGeneral}}" target="_blank" rel="noopener" class="btn" style="background: #25A244; color: #fff; min-height: 54px; font-size: 17px">{{t.contact_btn}}</a>
+<p style="margin: 6px 0 0; font-size: 14px; color: #4A6380">{{t.insta}} · {{t.insta_handle}}</p>
+</div>
+<div style="flex: 1 1 380px; min-width: 0; background: #FFF8DF; border-radius: 24px; padding: 28px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font: 400 28px Pacifico, cursive; color: #1A5FB4">{{t.merchant_title}}</h2>
+<p style="margin: 0; line-height: 1.55; color: #3A4E66">{{t.merchant_text}}</p>
+<a href="{{waMerchant}}" target="_blank" rel="noopener" class="btn" style="background: #1A5FB4; color: #fff; align-self: flex-start">{{t.merchant_btn}}</a>
+</div>
+</div>
+</section>
+</sc-if>
+
+<footer style="margin-top: 56px; background: #1A5FB4; color: #fff">
+<div style="max-width: 1240px; margin: 0 auto; padding: 28px 20px; display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: center; justify-content: space-between">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span style="font: 400 26px Pacifico, cursive">Mapa Cajueiro</span>
+<span style="font-size: 14px; color: #DCE9FA">{{t.footer}}</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<a href="{{waGeneral}}" target="_blank" rel="noopener" class="btn" style="background: #25A244; color: #fff">WhatsApp</a>
+<button onClick="{{resetLang}}" class="btn" style="background: transparent; color: #fff; border: 2px solid rgba(255,255,255,.6)">{{t.reset_lang}}</button>
+</div>
+</div>
+</footer>
+
+<sc-if value="{{modal}}" hint-placeholder-val="{{ false }}">
+<div style="position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box">
+<button onClick="{{closeModal}}" aria-label="{{t.close}}" style="position: absolute; inset: 0; border: 0; padding: 0; background: rgba(12,36,70,.45); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); cursor: pointer"></button>
+<div role="dialog" aria-modal="true" aria-label="{{cur.name}}" style="position: relative; width: 100%; max-width: 620px; max-height: 90vh; overflow: auto; background: #fff; border-radius: 26px; box-shadow: 0 30px 80px rgba(0,0,0,.3); padding: 22px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<button onClick="{{closeModal}}" aria-label="{{t.close}}" style="position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: #EEF5FF; color: #18324F; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+<div style="display: flex; align-items: center; gap: 14px; padding-right: 48px">
+<sc-if value="{{cur.logo}}" hint-placeholder-val="{{ true }}"><img src="{{cur.logo}}" alt="" style="width: 72px; height: 72px; border-radius: 50%; flex: none; box-shadow: 0 4px 12px rgba(0,0,0,.12)"></sc-if>
+<sc-if value="{{cur.noLogo}}" hint-placeholder-val="{{ false }}"><span style="width: 72px; height: 72px; border-radius: 50%; flex: none; background: #1A5FB4; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 26px">{{cur.initial}}</span></sc-if>
+<div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<h2 style="margin: 0; font-size: 24px; font-weight: 800; color: #18324F">{{cur.name}}</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center">
+<span style="font-size: 14px; color: #1A5FB4; font-weight: 700">{{cur.catLabel}}</span>
+<span style="font-size: 11px; font-weight: 800; color: #7A5600; background: #FFF1C2; border-radius: 999px; padding: 2px 8px">{{t.demo_tag}}</span>
+</div>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<div style="aspect-ratio: 4 / 3; border-radius: 14px; background: #E3EEFB; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #4A6380; font-size: 12px; font-weight: 700"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-8 8"></path></svg>{{t.photo}} 1</div>
+<div style="aspect-ratio: 4 / 3; border-radius: 14px; background: #E3EEFB; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #4A6380; font-size: 12px; font-weight: 700"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-8 8"></path></svg>{{t.photo}} 2</div>
+<div style="aspect-ratio: 4 / 3; border-radius: 14px; background: #E3EEFB; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #4A6380; font-size: 12px; font-weight: 700"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"></rect><circle cx="9" cy="10" r="2"></circle><path d="M21 16l-5-5-8 8"></path></svg>{{t.photo}} 3</div>
+</div>
+<sc-if value="{{showFallback}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: 13px; background: #EEF5FF; color: #1A3E6E; border-radius: 12px; padding: 8px 12px">{{t.fallback}}</p></sc-if>
+<p style="margin: 0; line-height: 1.55; color: #3A4E66">{{cur.desc}}</p>
+<div>
+<h3 style="margin: 0 0 8px; font-size: 15px; font-weight: 800">{{t.services}}</h3>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{cur.services}}" as="s" hint-placeholder-count="3"><span style="font-size: 13px; font-weight: 700; background: #F4F9FF; border: 1px solid #CFE0F5; border-radius: 999px; padding: 5px 12px; color: #1A3E6E">{{s}}</span></sc-for>
+</div>
+</div>
+<div style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: #3A4E66">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A5FB4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle></svg>
+<span><strong>{{t.addr_tbd}}</strong><br>{{t.ref}}: {{cur.ref}}</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<span class="btn" style="background: #EDEFF2; color: #5A6573; cursor: default; font-size: 14px">{{t.wa_missing}}</span>
+<a href="{{gmaps}}" target="_blank" rel="noopener" class="btn" style="background: #1A5FB4; color: #fff">{{t.directions}} · Google Maps</a>
+<a href="{{waze}}" target="_blank" rel="noopener" class="btn" style="background: #fff; color: #1A5FB4; border: 2px solid #1A5FB4">Waze</a>
+</div>
+<p style="margin: -6px 0 0; font-size: 12px; color: #5A6E86">{{t.coords_note}}</p>
+<a href="{{waUpdate}}" target="_blank" rel="noopener" class="btn" style="background: #E6F6EA; color: #155F2A">{{t.update}}</a>
+</div>
+</div>
+</sc-if>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { screen: 'lang', lang: 'pt', cat: 'all', q: '', sel: null, zoom: false, modal: false };
+    this.timers = [];
+  }
+  componentDidMount() {
+    try { const l = window.localStorage.getItem('mc_lang'); if (l) this.setState({ lang: l, screen: 'home' }); } catch (e) {}
+  }
+  componentWillUnmount() { this.timers.forEach(clearTimeout); }
+  later(fn, ms) { this.timers.push(setTimeout(fn, ms)); }
+  setLang(l) { try { window.localStorage.setItem('mc_lang', l); } catch (e) {} this.setState({ lang: l, screen: this.state.screen === 'lang' ? 'home' : this.state.screen }); }
+  go(screen, cat) { this.setState({ screen, cat: cat || this.state.cat, modal: false, zoom: false, sel: null }); try { window.scrollTo(0, 0); } catch (e) {} }
+  pick(id) {
+    this.setState({ sel: id, zoom: true, modal: false });
+    this.later(() => this.setState({ modal: true }), 700);
+  }
+  close() {
+    this.setState({ modal: false });
+    this.later(() => this.setState({ zoom: false, sel: null }), 120);
+  }
+  renderVals() {
+    const S = this.state;
+    const WA = '5586999933162';
+    const wa = (msg) => 'https://wa.me/' + WA + '?text=' + encodeURIComponent(msg);
+    const T = {
+      pt: { demo: 'Protótipo — dados de demonstração. Nomes e logos vêm da imagem de referência e ainda não foram confirmados.', nav_home: 'Início', nav_map: 'Mapa da cidade', nav_contact: 'Contato', support: 'Suporte', hero_pre: 'Descubra', hero_sub: 'Praia, natureza e gente acolhedora no litoral do Piauí.', cta_map: 'Explorar o mapa', cta_wa: 'Falar no WhatsApp', cats_title: 'O que você procura?', cat_all: 'Todos', cat_hosp: 'Hospedagem', cat_gastro: 'Gastronomia', cat_comercio: 'Comércio', cat_saude: 'Farmácias', cat_turismo: 'Pontos turísticos', cat_events: 'Eventos', cat_news: 'Notícias', feat_title: 'No mapa', feat_sub: 'Toque em um local para ver no mapa.', ev_title: 'Eventos', ev_empty: 'Nenhum evento publicado ainda. Os eventos cadastrados no painel aparecem aqui.', nw_title: 'Notícias', nw_empty: 'Nenhuma notícia publicada ainda. As notícias cadastradas no painel aparecem aqui.', map_title: 'Mapa da Cidade', map_sub: 'Explore Cajueiro da Praia! Toque em um logo.', search: 'Buscar por nome ou categoria', results: 'locais', none: 'Nenhum local encontrado.', back_view: 'Voltar ao mapa inteiro', demo_tag: 'Demonstração', services: 'Serviços', addr_tbd: 'Endereço a confirmar', ref: 'Referência na ilustração', directions: 'Como chegar', coords_note: 'Coordenadas de demonstração (centro aproximado da cidade). Cada local terá latitude e longitude reais.', wa_missing: 'WhatsApp do local não cadastrado', update: 'Atualizar informações deste local', photo: 'Foto', close: 'Fechar', fallback: '', contact_title: 'Fale com a gente', contact_sub: 'O único canal oficial de atendimento é o WhatsApp.', contact_btn: 'Abrir WhatsApp', merchant_title: 'É comerciante?', merchant_text: 'Peça a inclusão do seu estabelecimento ou a atualização dos dados pelo WhatsApp. A equipe faz a alteração pelo painel.', merchant_btn: 'Pedir inclusão ou atualização', insta: 'Instagram: vitrine e novidades', insta_handle: '[perfil oficial a definir]', footer: 'Mapa Turístico de Cajueiro da Praia – PI', reset_lang: 'Rever tela de idioma', msg_general: 'Olá! Vim pelo site Mapa Cajueiro e preciso de ajuda.', msg_update: 'Olá! Vim pelo Mapa Cajueiro e quero atualizar as informações de: ', msg_merchant: 'Olá! Tenho um estabelecimento em Cajueiro da Praia e quero aparecer no Mapa Cajueiro.' },
+      en: { demo: 'Prototype — demo data. Names and logos come from the reference image and are not confirmed yet.', nav_home: 'Home', nav_map: 'Town map', nav_contact: 'Contact', support: 'Support', hero_pre: 'Discover', hero_sub: 'Beach, nature and welcoming people on the coast of Piauí.', cta_map: 'Explore the map', cta_wa: 'Chat on WhatsApp', cats_title: 'What are you looking for?', cat_all: 'All', cat_hosp: 'Lodging', cat_gastro: 'Food & drink', cat_comercio: 'Shops', cat_saude: 'Pharmacies', cat_turismo: 'Attractions', cat_events: 'Events', cat_news: 'News', feat_title: 'On the map', feat_sub: 'Tap a place to see it on the map.', ev_title: 'Events', ev_empty: 'No events published yet. Events added in the admin panel will show here.', nw_title: 'News', nw_empty: 'No news published yet. News added in the admin panel will show here.', map_title: 'Town Map', map_sub: 'Explore Cajueiro da Praia! Tap a logo.', search: 'Search by name or category', results: 'places', none: 'No places found.', back_view: 'Back to full map', demo_tag: 'Demo', services: 'Services', addr_tbd: 'Address to be confirmed', ref: 'Reference on the illustration', directions: 'Directions', coords_note: 'Demo coordinates (approximate town centre). Each place will have its real latitude and longitude.', wa_missing: 'No WhatsApp registered yet', update: 'Update this place’s information', photo: 'Photo', close: 'Close', fallback: 'Translation not available yet — showing the Portuguese text.', contact_title: 'Talk to us', contact_sub: 'Our only official support channel is WhatsApp.', contact_btn: 'Open WhatsApp', merchant_title: 'Own a business?', merchant_text: 'Ask to add your business or update its details via WhatsApp. The team makes the change in the admin panel.', merchant_btn: 'Request listing or update', insta: 'Instagram: showcase and news', insta_handle: '[official profile TBD]', footer: 'Tourist Map of Cajueiro da Praia – PI', reset_lang: 'Show language screen again', msg_general: 'Hi! I came from the Mapa Cajueiro website and need help.', msg_update: 'Hi! I came from Mapa Cajueiro and want to update the information for: ', msg_merchant: 'Hi! I have a business in Cajueiro da Praia and want to be on Mapa Cajueiro.' },
+      es: { demo: 'Prototipo — datos de demostración. Los nombres y logos vienen de la imagen de referencia y aún no están confirmados.', nav_home: 'Inicio', nav_map: 'Mapa de la ciudad', nav_contact: 'Contacto', support: 'Soporte', hero_pre: 'Descubre', hero_sub: 'Playa, naturaleza y gente acogedora en el litoral de Piauí.', cta_map: 'Explorar el mapa', cta_wa: 'Hablar por WhatsApp', cats_title: '¿Qué estás buscando?', cat_all: 'Todos', cat_hosp: 'Hospedaje', cat_gastro: 'Gastronomía', cat_comercio: 'Comercio', cat_saude: 'Farmacias', cat_turismo: 'Puntos turísticos', cat_events: 'Eventos', cat_news: 'Noticias', feat_title: 'En el mapa', feat_sub: 'Toca un lugar para verlo en el mapa.', ev_title: 'Eventos', ev_empty: 'Aún no hay eventos publicados. Los eventos registrados en el panel aparecerán aquí.', nw_title: 'Noticias', nw_empty: 'Aún no hay noticias publicadas. Las noticias registradas en el panel aparecerán aquí.', map_title: 'Mapa de la Ciudad', map_sub: '¡Explora Cajueiro da Praia! Toca un logo.', search: 'Buscar por nombre o categoría', results: 'lugares', none: 'No se encontraron lugares.', back_view: 'Volver al mapa completo', demo_tag: 'Demostración', services: 'Servicios', addr_tbd: 'Dirección por confirmar', ref: 'Referencia en la ilustración', directions: 'Cómo llegar', coords_note: 'Coordenadas de demostración (centro aproximado de la ciudad). Cada lugar tendrá su latitud y longitud reales.', wa_missing: 'WhatsApp del lugar no registrado', update: 'Actualizar la información de este lugar', photo: 'Foto', close: 'Cerrar', fallback: 'Traducción aún no disponible — se muestra el texto en portugués.', contact_title: 'Habla con nosotros', contact_sub: 'Nuestro único canal oficial de atención es WhatsApp.', contact_btn: 'Abrir WhatsApp', merchant_title: '¿Tienes un comercio?', merchant_text: 'Pide la inclusión de tu establecimiento o la actualización de sus datos por WhatsApp. El equipo hace el cambio en el panel.', merchant_btn: 'Pedir inclusión o actualización', insta: 'Instagram: vitrina y novedades', insta_handle: '[perfil oficial por definir]', footer: 'Mapa Turístico de Cajueiro da Praia – PI', reset_lang: 'Ver otra vez la pantalla de idioma', msg_general: '¡Hola! Vengo del sitio Mapa Cajueiro y necesito ayuda.', msg_update: '¡Hola! Vengo del Mapa Cajueiro y quiero actualizar la información de: ', msg_merchant: '¡Hola! Tengo un comercio en Cajueiro da Praia y quiero aparecer en el Mapa Cajueiro.' }
+    };
+    const t = T[S.lang] || T.pt;
+    const refDesc = 'Logo presente na ilustração de referência do mapa. Nome, endereço, horários e contatos ainda não foram confirmados com o estabelecimento — por isso não aparecem aqui.';
+    const RAW = [
+      { id: 'pousada', name: 'Pousada Demonstração', cat: 'hosp', x: 0.834, y: 0.156, d: 0.034, pin: true, desc: 'Cadastro fictício para testar o fluxo completo: painel → banco de dados → mapa → modal. Será substituído por uma pousada real que aceitar participar.', services: ['Wi-Fi (exemplo)', 'Café da manhã (exemplo)'], ref: 'casa no alto, à direita' },
+      { id: 'padaria', name: 'Padaria / Café', cat: 'gastro', x: 0.269, y: 0.369, d: 0.064, logo: '/_blob/cdfe2a8f2b5a0de8f9174d22e4ac3b48', ref: 'Av. Geraldo Laura' },
+      { id: 'optica', name: 'Óptica Lu', cat: 'comercio', x: 0.367, y: 0.307, d: 0.054, logo: '/_blob/f9837db5925ab2ddbbfd4f62327a06a6', ref: 'Av. Geraldo Laura' },
+      { id: 'mercantil', name: 'Mercantil Narcisinho', cat: 'comercio', x: 0.460, y: 0.405, d: 0.058, logo: '/_blob/797d841400ee8c3d55da9459d6165db3', ref: 'Av. Geraldo Laura' },
+      { id: 'cl', name: 'CL Hortifruti', cat: 'comercio', x: 0.651, y: 0.227, d: 0.046, logo: '/_blob/135512db8475d0e459434e27e29aec6e', ref: 'Av. Geraldo Laura × Tv. Regino Mendes' },
+      { id: 'mix', name: 'Mix Utilidades', cat: 'comercio', x: 0.728, y: 0.180, d: 0.046, logo: '/_blob/faae2662fc1060a8d842ecc002e1ba0d', ref: 'Tv. Regino Mendes' },
+      { id: 'consult', name: 'Consult Farma', cat: 'saude', x: 0.672, y: 0.337, d: 0.046, logo: '/_blob/c61969d4c4b97e7d61b99aeecd4e7b70', ref: 'Tv. Regino Mendes' },
+      { id: 'diva', name: 'Toda Diva', cat: 'comercio', x: 0.750, y: 0.562, d: 0.048, logo: '/_blob/b1ed689f229431b18f18d9d2bb5b817f', ref: 'R. Grijalva Carneiro' },
+      { id: 'quiosque', name: 'Quiosque na orla', cat: 'turismo', x: 0.944, y: 0.883, d: 0.04, pin: true, desc: 'Ponto turístico de exemplo, desenhado na ilustração. Fotos, descrição e serviços reais serão cadastrados pelo painel.', services: ['[a cadastrar]'], ref: 'orla, canto inferior direito' }
+    ];
+    const catLabel = { hosp: t.cat_hosp, gastro: t.cat_gastro, comercio: t.cat_comercio, saude: t.cat_saude, turismo: t.cat_turismo };
+    const q = S.q.trim().toLowerCase();
+    const all = RAW.map((p) => {
+      const label = catLabel[p.cat];
+      const match = (S.cat === 'all' || S.cat === p.cat) && (!q || (p.name + ' ' + label).toLowerCase().includes(q));
+      return {
+        ...p, catLabel: label, match,
+        logo: p.logo || '', noLogo: !p.logo, initial: p.name.charAt(0),
+        desc: p.desc || refDesc, services: p.services || ['[a confirmar]'],
+        pick: () => this.pick(p.id),
+        openFromHome: () => { this.go('mapa', 'all'); this.later(() => this.pick(p.id), 450); }
+      };
+    });
+    const markers = all.map((m) => ({
+      ...m,
+      cls: 'mk' + (m.match ? (S.cat !== 'all' || q ? ' on' : '') : ' off'),
+      pos: { left: (m.x * 100) + '%', top: (m.y * 100) + '%', width: (m.d * 100) + '%' }
+    }));
+    const filtered = all.filter((p) => p.match);
+    const cur = all.find((p) => p.id === S.sel) || all[0];
+    let mapT = 'translate(0%,0%) scale(1)';
+    if (S.zoom && S.sel) {
+      const s = 2.4, clamp = (v) => Math.max((1 - s) * 100, Math.min(0, v));
+      mapT = 'translate(' + clamp((0.5 - cur.x * s) * 100) + '%,' + clamp((0.5 - cur.y * s) * 100) + '%) scale(' + s + ')';
+    }
+    const lat = -2.931, lng = -41.343;
+    const chipsDef = [['all', t.cat_all], ['hosp', t.cat_hosp], ['gastro', t.cat_gastro], ['comercio', t.cat_comercio], ['saude', t.cat_saude], ['turismo', t.cat_turismo]];
+    return {
+      t, q: S.q,
+      isLang: S.screen === 'lang', isSite: S.screen !== 'lang',
+      navHome: 'nav' + (S.screen === 'home' ? ' sel' : ''), navMap: 'nav' + (S.screen === 'mapa' ? ' sel' : ''), navContact: 'nav' + (S.screen === 'contato' ? ' sel' : ''),
+      isHome: S.screen === 'home', isMap: S.screen === 'mapa', isContact: S.screen === 'contato',
+      langs: ['pt', 'en', 'es'].map((l) => ({ code: l.toUpperCase(), cls: 'lp' + (S.lang === l ? ' sel' : ''), pick: () => this.setLang(l) })),
+      chips: chipsDef.map(([k, label]) => ({ label, cls: 'chip' + (S.cat === k ? ' sel' : ''), pick: () => this.setState({ cat: k }) })),
+      places: all, markers, filtered, count: filtered.length, empty: filtered.length === 0,
+      cur, zoom: S.zoom, modal: S.modal, mapT, showFallback: S.lang !== 'pt',
+      gmaps: 'https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng,
+      waze: 'https://waze.com/ul?ll=' + lat + ',' + lng + '&navigate=yes',
+      waGeneral: wa(t.msg_general), waMerchant: wa(t.msg_merchant), waUpdate: wa(t.msg_update + cur.name),
+      onQ: (e) => this.setState({ q: e.target.value }),
+      choosePt: () => this.setLang('pt'), chooseEn: () => this.setLang('en'), chooseEs: () => this.setLang('es'),
+      goHome: () => this.go('home'), goContact: () => this.go('contato'),
+      goMapAll: () => this.go('mapa', 'all'), goMapHosp: () => this.go('mapa', 'hosp'), goMapGastro: () => this.go('mapa', 'gastro'),
+      goMapComercio: () => this.go('mapa', 'comercio'), goMapSaude: () => this.go('mapa', 'saude'), goMapTurismo: () => this.go('mapa', 'turismo'),
+      closeModal: () => this.close(),
+      resetLang: () => { try { window.localStorage.removeItem('mc_lang'); } catch (e) {} this.setState({ screen: 'lang', modal: false, zoom: false, sel: null }); }
+    };
+  }
+}
+</script>
+</body>
+</html>
