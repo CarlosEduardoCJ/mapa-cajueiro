@@ -1,16 +1,31 @@
 // Rodapé do site público.
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useIdioma, salvarIdioma } from '../i18n/IdiomaContext.jsx';
+import { CHAVE_IDIOMA } from '../i18n/textos.js';
 import { linkWhatsApp } from '../lib/utils.js';
 import { IconeWhatsApp } from './Icones.jsx';
 
-export default function Rodape({ numeroSuporte }) {
-  const linkSuporte = linkWhatsApp(numeroSuporte, 'Olá! Vim pelo site Mapa Cajueiro e preciso de ajuda.');
+export default function Rodape() {
+  const { t, caminho, numeroSuporte } = useIdioma();
+  const navigate = useNavigate();
+  const linkSuporte = linkWhatsApp(numeroSuporte, t.msgSuporte);
+
+  // Mostra de novo a tela de escolha de idioma (apaga a escolha salva)
+  function reverIdioma() {
+    try {
+      window.localStorage.removeItem(CHAVE_IDIOMA);
+    } catch (e) {
+      /* ignora */
+    }
+    navigate('/');
+  }
+
   return (
     <footer className="rodape">
       <div className="rodape-interno">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <span style={{ font: '400 26px Pacifico, cursive' }}>Mapa Cajueiro</span>
-          <small>Mapa Turístico de Cajueiro da Praia – PI</small>
+          <small>{t.rodape}</small>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
           {linkSuporte ? (
@@ -18,8 +33,11 @@ export default function Rodape({ numeroSuporte }) {
               <IconeWhatsApp size={20} /> WhatsApp
             </a>
           ) : null}
+          <button onClick={reverIdioma} className="btn" style={{ background: 'transparent', color: '#fff', border: '2px solid rgba(255,255,255,.6)' }}>
+            {t.rever}
+          </button>
           <Link to="/admin/login" className="btn" style={{ background: 'transparent', color: '#fff', border: '2px solid rgba(255,255,255,.6)' }}>
-            Área da equipe
+            {t.areaEquipe}
           </Link>
         </div>
       </div>

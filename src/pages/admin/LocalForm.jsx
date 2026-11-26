@@ -44,6 +44,11 @@ export default function LocalForm() {
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState(null); // { tipo: 'erro' | 'ok', texto }
   const [slugManual, setSlugManual] = useState(false);
+  // Textos em inglês e espanhol (a equipe escreve; o site não traduz sozinho)
+  const [trads, setTrads] = useState({
+    en: { descricao: '', servicos: '', revisado: false },
+    es: { descricao: '', servicos: '', revisado: false },
+  });
 
   // Carrega categorias e, se for edição, o local atual
   useEffect(() => {
@@ -86,6 +91,20 @@ export default function LocalForm() {
           setLogoPath(local.logo_path || '');
           setFotosExistentes(fotos || []);
           setSlugManual(true);
+          const { data: outras } = await supabase
+            .from('locais_traducoes')
+            .select('idioma, descricao, servicos, revisado')
+            .eq('local_id', id)
+            .in('idioma', ['en', 'es']);
+          const novas = { ...trads };
+          (outras || []).forEach((o) => {
+            novas[o.idioma] = {
+              descricao: o.descricao || '',
+              servicos: (o.servicos || []).join(', '),
+              revisado: Boolean(o.revisado),
+            };
+          });
+          setTrads(novas);
         }
       }
       setCarregando(false);
@@ -187,6 +206,20 @@ export default function LocalForm() {
         revisado: true,
       });
       if (erroTrad) throw erroTrad;
+
+      // 2b) Textos em inglês e espanhol (só salva o idioma que tem conteúdo)
+      for (const idioma of ['en', 'es']) {
+        const t = trads[idioma];
+        if (!t.descricao.trim() && !t.servicos.trim()) continue;
+        const { error } = await supabase.from('locais_traducoes').upsert({
+          local_id: localId,
+          idioma,
+          descricao: t.descricao.trim() || null,
+          servicos: t.servicos.split(',').map((s) => s.trim()).filter(Boolean),
+          revisado: t.revisado,
+        });
+        if (error) throw error;
+      }
 
       // 3) Logo
       if (logoNovo) {
@@ -310,6 +343,43 @@ export default function LocalForm() {
             É dado de demonstração (aparece identificado como demonstração)
           </label>
         </div>
+      </section>
+
+      <section className="cartao" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <h2 style={{ margin: 0, fontSize: 18 }}>Traduções</h2>
+        <p style={{ margin: 0, fontSize: 13, color: '#4A6380' }}>
+          Escreva em inglês e espanhol. Se ficar vazio, o site mostra o português com um aviso. Marque "revisado" só depois de conferir a tradução.
+        </p>
+        {[
+          { codigo: 'en', rotulo: 'Inglês' },
+          { codigo: 'es', rotulo: 'Espanhol' },
+        ].map((i) => (
+          <div key={i.codigo} style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: '1px solid #EEF3FA', paddingTop: 12 }}>
+            <strong>{i.rotulo}</strong>
+            <label className="campo">
+              Descrição
+              <textarea
+                value={trads[i.codigo].descricao}
+                onChange={(e) => setTrads((x) => ({ ...x, [i.codigo]: { ...x[i.codigo], descricao: e.target.value } }))}
+              />
+            </label>
+            <label className="campo">
+              Serviços (separados por vírgula)
+              <input
+                value={trads[i.codigo].servicos}
+                onChange={(e) => setTrads((x) => ({ ...x, [i.codigo]: { ...x[i.codigo], servicos: e.target.value } }))}
+              />
+            </label>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontWeight: 700 }}>
+              <input
+                type="checkbox"
+                checked={trads[i.codigo].revisado}
+                onChange={(e) => setTrads((x) => ({ ...x, [i.codigo]: { ...x[i.codigo], revisado: e.target.checked } }))}
+              />
+              Tradução revisada por uma pessoa
+            </label>
+          </div>
+        ))}
       </section>
 
       <section className="cartao" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

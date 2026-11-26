@@ -1,14 +1,25 @@
 // Funções compartilhadas para ler locais (estabelecimentos e pontos turísticos).
 
-// Nome da categoria em português (os outros idiomas entram na Entrega 3)
-export function nomeCategoria(local) {
+// Nome da categoria no idioma pedido; se não existir, usa o português
+export function nomeCategoria(local, idioma = 'pt') {
   const traducoes = local?.categorias?.categorias_traducoes || [];
-  return traducoes.find((t) => t.idioma === 'pt')?.nome || '';
+  return (
+    traducoes.find((t) => t.idioma === idioma)?.nome ||
+    traducoes.find((t) => t.idioma === 'pt')?.nome ||
+    ''
+  );
 }
 
-// Texto em português de um local (descrição, serviços)
-export function traducaoPt(traducoes) {
-  return (traducoes || []).find((t) => t.idioma === 'pt') || null;
+// Texto de um local no idioma pedido (descrição, serviços).
+// Devolve também se foi preciso cair no português (para mostrar o aviso ao visitante).
+export function escolherTraducao(traducoes, idioma = 'pt') {
+  const lista = traducoes || [];
+  const escolhida = lista.find((t) => t.idioma === idioma);
+  if (escolhida && (escolhida.descricao || (escolhida.servicos || []).length)) {
+    return { traducao: escolhida, usouPortugues: false };
+  }
+  const pt = lista.find((t) => t.idioma === 'pt') || null;
+  return { traducao: pt, usouPortugues: idioma !== 'pt' };
 }
 
 // Colunas que o site público pede do banco ao listar locais

@@ -41,6 +41,9 @@ export default function AdminLayout() {
           <NavLink to="/admin" end className={linkMenu}>Início</NavLink>
           {podeUsar('locais') ? <NavLink to="/admin/locais" className={linkMenu}>Locais</NavLink> : null}
           {podeUsar('mapa') ? <NavLink to="/admin/mapa" className={linkMenu}>Mapa e marcadores</NavLink> : null}
+          {podeUsar('categorias') || podeUsar('traducoes') ? (
+            <NavLink to="/admin/categorias" className={linkMenu}>Categorias e nomes</NavLink>
+          ) : null}
         </nav>
         <div className="admin-conteudo">
           <Outlet />
