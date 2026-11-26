@@ -1,0 +1,12 @@
+# Dependências instaladas (npm install recria esta pasta)
+node_modules
+
+# Versão de produção gerada pelo build
+dist
+
+# Variáveis secretas ou locais: NUNCA enviar ao GitHub
+.env.local
+.env*.local
+
+# Arquivo do sistema operacional Mac
+.DS_Store
