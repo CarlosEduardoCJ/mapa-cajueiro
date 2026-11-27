@@ -1,0 +1,9 @@
+{
+ "maxZoom": 5,
+ "maxNativeZoom": 4,
+ "tileSize": 256,
+ "larguraUnidades": 256,
+ "alturaUnidades": 212.3733,
+ "tiles": 1165,
+ "origem": "canto superior esquerdo"
+}
