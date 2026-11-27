@@ -4,14 +4,18 @@
 // - Desfazer / Refazer (botões e Ctrl+Z / Ctrl+Shift+Z): cada mudança guarda o "antes" e o "depois".
 // - Modo edição (cadeado): precisa estar ligado para mexer nos marcadores, para evitar mudanças sem querer.
 // As posições (x, y) são só da imagem; as coordenadas reais (lat/lng) ficam no cadastro do local.
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import MapaInterativo from '../../components/MapaInterativo.jsx';
 import MarcadorMapa from '../../components/MarcadorMapa.jsx';
 import { supabase, BUCKET_MIDIA, urlImagem } from '../../lib/supabase.js';
 import { comprimirImagem } from '../../lib/imagens.js';
 import { inicial } from '../../lib/utils.js';
+import { useMetaTiles } from '../../lib/tiles.js';
 import { mensagemAmigavel } from '../../lib/erros.js';
+
+// O mapa com Leaflet (tiles) só é baixado quando esta tela é aberta
+const MapaLeaflet = lazy(() => import('../../components/MapaLeaflet.jsx'));
 
 const TAMANHO_PADRAO = 0.05;
 const LIMITE_HISTORICO = 50; // quantas ações ficam guardadas na sessão
@@ -68,6 +72,9 @@ export default function EditorMapa() {
   const [feitas, setFeitas] = useState([]);
   const [refazer, setRefazer] = useState([]);
   const [trabalhando, setTrabalhando] = useState(false); // evita desfazer/refazer em duplicidade
+  const { meta } = useMetaTiles(); // dados dos tiles; se não existirem, o editor usa a imagem única como reserva
+  const usaTiles = Boolean(meta);
+  const mapaRef = useRef(null); // funções do mapa Leaflet
   const arrasteRef = useRef(null); // marcador sendo arrastado
   const ctxMapaRef = useRef(null); // funções do mapa (converter posição da tela para a imagem)
   const areaRef = useRef(null); // área do mapa (para saber se soltou em cima dele)
@@ -211,7 +218,7 @@ export default function EditorMapa() {
     setOcupado(true);
     setMensagem(null);
     try {
-      const pronta = await comprimirImagem(arquivo);
+      const pronta = await comprimirImagem(arquivo, { semLimiteDeLado: true }); // mapa: sem reduzir os pixels
       const { largura, altura } = await dimensoesImagem(pronta);
       const novoId = crypto.randomUUID();
       const caminho = `mapas/${novoId}.webp`;
@@ -344,6 +351,31 @@ export default function EditorMapa() {
     alvo.addEventListener('pointercancel', cancelar);
   }
 
+  // Arrastar com o Leaflet: o próprio mapa move o marcador; ao soltar, guardamos x e y normalizados (0 a 1)
+  // (movimentos de menos de 5 px não contam como arrasto: o Leaflet usa clickTolerance = 5)
+  async function terminarArrasteLeaflet(marcadorId, { x, y }) {
+    const marcador = marcadoresRef.current.find((m) => m.id === marcadorId);
+    if (!marcador) return;
+    if (Math.abs(marcador.x - x) < 0.00001 && Math.abs(marcador.y - y) < 0.00001) return;
+    const antes = estadoDe(marcador);
+    const depois = { ...antes, x, y };
+    try {
+      const { error } = await supabase.from('marcadores').update({ x, y }).eq('id', marcador.id);
+      if (error) throw error;
+      registrar({ tipo: 'mover', localId: marcador.local_id, nome: nomeDoLocal(marcador.local_id)?.nome || 'Local', antes, depois });
+      setMensagem({ tipo: 'ok', texto: 'Salvo! Posição atualizada.' });
+    } catch (erro) {
+      setMensagem({ tipo: 'erro', texto: mensagemAmigavel(erro, 'salvar a posição') });
+    }
+    await carregar(); // em caso de erro, o marcador volta ao lugar salvo
+  }
+
+  // Escolher um marcador pela lista "No mapa": seleciona e leva o mapa até ele
+  function irParaMarcador(m) {
+    setSelecionado(m.id);
+    if (usaTiles) mapaRef.current?.focarEm(m.x, m.y);
+  }
+
   // Arrastar um nome da lista "Fora do mapa" até a imagem
   function iniciarArrasteDaLista(e, local) {
     if (e.button !== undefined && e.button !== 0) return;
@@ -359,8 +391,9 @@ export default function EditorMapa() {
       setArrastando(null);
       const area = areaRef.current?.getBoundingClientRect();
       const dentro = area && ev.clientX >= area.left && ev.clientX <= area.right && ev.clientY >= area.top && ev.clientY <= area.bottom;
-      if (dentro && ctxMapaRef.current) {
-        const { x, y } = ctxMapaRef.current.paraNormalizado(ev.clientX, ev.clientY);
+      const converter = usaTiles ? mapaRef.current?.paraNormalizado : ctxMapaRef.current?.paraNormalizado;
+      if (dentro && converter) {
+        const { x, y } = converter(ev.clientX, ev.clientY);
         posicionar(local.id, x, y)
           .then(() => {
             setMensagem({ tipo: 'ok', texto: `Salvo! "${local.nome}" foi posicionado.` });
@@ -464,7 +497,7 @@ export default function EditorMapa() {
           <p className="texto-apoio">Coloque cada local no lugar certo da cidade. Use + e − para aproximar.</p>
         </div>
         <label className={`btn btn-azul${edicao ? '' : ' cartao-desativado'}`} style={{ cursor: ocupado ? 'wait' : edicao ? 'pointer' : 'not-allowed' }}>
-          {ocupado ? 'Enviando…' : mapa ? 'Trocar a imagem do mapa' : 'Enviar a imagem do mapa'}
+          {ocupado ? 'Enviando…' : usaTiles ? 'Imagem de reserva do mapa' : mapa ? 'Trocar a imagem do mapa' : 'Enviar a imagem do mapa'}
           <input type="file" accept="image/jpeg,image/png,image/webp" onChange={trocarImagem} disabled={ocupado || !edicao} style={{ display: 'none' }} />
         </label>
       </div>
@@ -505,7 +538,11 @@ export default function EditorMapa() {
       {!carregado ? <p style={{ color: '#4A6380' }}>Carregando…</p> : null}
 
       {carregado && !mapa ? (
-        <p className="aviso aviso-info">Envie a imagem do mapa para começar a posicionar os locais.</p>
+        <p className="aviso aviso-info">
+          {usaTiles
+            ? 'Para posicionar os locais, falta cadastrar o mapa ativo: use "Imagem de reserva do mapa" para enviar uma imagem (o mapa mostrado continua sendo o interativo).'
+            : 'Envie a imagem do mapa para começar a posicionar os locais.'}
+        </p>
       ) : null}
 
       {mapa ? (
@@ -518,33 +555,59 @@ export default function EditorMapa() {
               </div>
             ) : null}
             <div ref={areaRef} className={`area-mapa-editor${escolhido && edicao ? ' pronto' : ''}`}>
-              <MapaInterativo
-                src={urlImagem(mapa.imagem_path)}
-                alt="Mapa para posicionar os locais"
-                proporcao={`${mapa.largura} / ${mapa.altura}`}
-                onPontoClique={clicarMapa}
-                marcadores={(ctx) => {
-                  ctxMapaRef.current = ctx;
-                  return marcadoresComNome.map((m) => (
-                    <MarcadorMapa
-                      key={m.id}
-                      nome={m.locais?.nome || 'Local'}
-                      logoPath={m.locais?.logo_path}
-                      estilo={m.estilo}
-                      className={`marcador-editor${selecionado === m.id ? ' selecionado' : ''}${edicao ? '' : ' travado'}`}
-                      onPointerDown={(e) => iniciarArraste(e, m, ctx.paraNormalizado)}
-                      onClick={() => setSelecionado(m.id)}
-                      style={{
-                        left: `${m.x * 100}%`,
-                        top: `${m.y * 100}%`,
-                        width: `${m.tamanho * 100}%`,
-                        opacity: m.ativo ? 1 : 0.4,
-                        touchAction: 'none',
-                      }}
-                    />
-                  ));
-                }}
-              />
+              {usaTiles ? (
+                <Suspense fallback={<p style={{ padding: 20, color: '#4A6380' }}>Carregando o mapa…</p>}>
+                  <MapaLeaflet
+                    ref={mapaRef}
+                    meta={meta}
+                    arrastavel={edicao}
+                    marcadores={marcadoresComNome.map((m) => ({
+                      id: m.id,
+                      x: m.x,
+                      y: m.y,
+                      tamanho: m.tamanho,
+                      estilo: m.estilo,
+                      nome: m.locais?.nome || 'Local',
+                      logoUrl: m.locais?.logo_path ? urlImagem(m.locais.logo_path) : null,
+                      classe: `marcador-editor${selecionado === m.id ? ' selecionado' : ''}${edicao ? '' : ' travado'}`,
+                      opacidade: m.ativo ? 1 : 0.4,
+                      destaque: selecionado === m.id,
+                      tabIndex: 0,
+                    }))}
+                    aoClicarMarcador={(id) => setSelecionado(id)}
+                    aoClicarNoMapa={clicarMapa}
+                    aoTerminarArraste={terminarArrasteLeaflet}
+                  />
+                </Suspense>
+              ) : (
+                <MapaInterativo
+                  src={urlImagem(mapa.imagem_path)}
+                  alt="Mapa para posicionar os locais"
+                  proporcao={`${mapa.largura} / ${mapa.altura}`}
+                  onPontoClique={clicarMapa}
+                  marcadores={(ctx) => {
+                    ctxMapaRef.current = ctx;
+                    return marcadoresComNome.map((m) => (
+                      <MarcadorMapa
+                        key={m.id}
+                        nome={m.locais?.nome || 'Local'}
+                        logoPath={m.locais?.logo_path}
+                        estilo={m.estilo}
+                        className={`marcador-editor${selecionado === m.id ? ' selecionado' : ''}${edicao ? '' : ' travado'}`}
+                        onPointerDown={(e) => iniciarArraste(e, m, ctx.paraNormalizado)}
+                        onClick={() => setSelecionado(m.id)}
+                        style={{
+                          left: `${m.x * 100}%`,
+                          top: `${m.y * 100}%`,
+                          width: `${m.tamanho * 100}%`,
+                          opacity: m.ativo ? 1 : 0.4,
+                          touchAction: 'none',
+                        }}
+                      />
+                    ));
+                  }}
+                />
+              )}
             </div>
             <p className="texto-apoio" style={{ marginTop: 10 }}>
               Toque num marcador para ver e editar. Para mover, arraste o próprio marcador (com o Modo edição ligado). Para pôr um local novo, escolha-o na lista "Fora do mapa".
@@ -640,7 +703,7 @@ export default function EditorMapa() {
               <h2 className="admin-subtitulo" style={{ margin: 0 }}>No mapa ({marcadores.length})</h2>
               <div className="lista-fora">
                 {marcadoresComNome.map((m) => (
-                  <button key={m.id} type="button" onClick={() => setSelecionado(m.id)} className={`item-no-mapa${selecionado === m.id ? ' ativo' : ''}`}>
+                  <button key={m.id} type="button" onClick={() => irParaMarcador(m)} className={`item-no-mapa${selecionado === m.id ? ' ativo' : ''}`}>
                     {m.locais?.nome}{m.ativo ? '' : ' (desativado)'}
                   </button>
                 ))}

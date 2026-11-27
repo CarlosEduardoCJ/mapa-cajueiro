@@ -1,6 +1,7 @@
-// Mapa da cidade (público): mapa ilustrado com zoom e arrasto, marcadores lidos do banco.
+// Mapa da cidade (público): mapa ilustrado interativo (Leaflet, com tiles), marcadores lidos do banco.
+// Se os tiles não estiverem disponíveis, usa a imagem única do mapa (MapaInterativo), como antes.
 // Clicar num logo aproxima, escurece o fundo e abre a ficha. Ao fechar, volta ao enquadramento de antes.
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import FichaLocal from '../components/FichaLocal.jsx';
@@ -18,8 +19,12 @@ import {
   normalizarTexto,
 } from '../lib/locais.js';
 import { useTitulo } from '../lib/seo.js';
+import { useMetaTiles } from '../lib/tiles.js';
 import { useTelaCheia } from '../lib/telaCheia.js';
 import { inicial } from '../lib/utils.js';
+
+// O Leaflet só é baixado quando alguém abre esta página (não pesa nas outras)
+const MapaLeaflet = lazy(() => import('../components/MapaLeaflet.jsx'));
 
 const ESCALA_AO_CLICAR = 2.4; // quanto o mapa aproxima ao clicar num logo
 
@@ -27,6 +32,9 @@ export default function MapaCidade() {
   const { lang, t } = useIdioma();
   const [params, setParams] = useSearchParams();
   useTitulo(`${t.mapaTitulo} — Mapa Cajueiro`);
+  // Tiles do mapa interativo (meta.json). Sem eles, cai para a imagem única.
+  const { meta, carregando: carregandoMeta } = useMetaTiles();
+  const usaTiles = Boolean(meta);
 
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
@@ -144,7 +152,7 @@ export default function MapaCidade() {
     }, 120);
   }
 
-  if (carregando) {
+  if (carregando || carregandoMeta) {
     return (
       <section style={{ maxWidth: 1320, margin: '0 auto', padding: '28px 20px 8px', textAlign: 'center' }}>
         <h1 className="titulo-pacifico" style={{ fontSize: 40 }}>{t.mapaTitulo}</h1>
@@ -155,7 +163,8 @@ export default function MapaCidade() {
   if (erro) {
     return <div className="aviso aviso-erro" style={{ margin: 24 }}>{erro}</div>;
   }
-  if (!mapa) {
+  // Sem tiles, o mapa depende da imagem cadastrada; com tiles, o mapa aparece mesmo sem marcadores
+  if (!mapa && !usaTiles) {
     return (
       <section style={{ maxWidth: 800, margin: '0 auto', padding: '48px 20px', textAlign: 'center' }}>
         <h1 className="titulo-pacifico" style={{ fontSize: 40 }}>{t.mapaTitulo}</h1>
@@ -164,7 +173,42 @@ export default function MapaCidade() {
     );
   }
 
-  const proporcao = mapa.largura && mapa.altura ? `${mapa.largura} / ${mapa.altura}` : '3 / 2';
+  const proporcao = mapa?.largura && mapa?.altura ? `${mapa.largura} / ${mapa.altura}` : '3 / 2';
+  const razao = usaTiles ? meta.larguraUnidades / meta.alturaUnidades : mapa?.largura && mapa?.altura ? mapa.largura / mapa.altura : 1.5;
+
+  // Botão "Tela cheia" (canto superior direito do mapa)
+  const botaoTelaCheia = (
+    <button
+      type="button"
+      className="mapa-tela-cheia"
+      onClick={alternar}
+      aria-pressed={modo !== 'normal'}
+      aria-label={modo === 'normal' ? t.telaCheia : t.sairTelaCheia}
+      title={modo === 'normal' ? t.telaCheia : t.sairTelaCheia}
+    >
+      {modo === 'normal' ? <IconeExpandir size={20} /> : <IconeRecolher size={20} />}
+      <span>{modo === 'normal' ? t.telaCheia : t.sairTelaCheia}</span>
+    </button>
+  );
+
+  // Marcadores no formato do mapa Leaflet (x e y de 0 a 1, como no banco)
+  const marcadoresLeaflet = marcadores.map((m) => {
+    const casa = passaFiltro(m.local);
+    const pulsa = filtroAtivo && casa && m.local.id !== selecionadoId ? 'pulsa' : '';
+    const fora = casa ? '' : 'fora';
+    return {
+      id: m.local.id,
+      chave: m.id,
+      x: m.x,
+      y: m.y,
+      tamanho: m.tamanho,
+      estilo: m.estilo,
+      nome: m.local.nome,
+      logoUrl: m.local.logo_path ? urlImagem(m.local.logo_path) : '',
+      classe: `${pulsa} ${fora}`.trim(),
+      tabIndex: casa ? 0 : -1,
+    };
+  });
 
   return (
     <section style={{ maxWidth: 1320, margin: '0 auto', padding: '28px 20px 8px' }}>
@@ -196,25 +240,26 @@ export default function MapaCidade() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'flex-start' }}>
         <div
           ref={palcoRef}
-          className={`tc-palco${modo === 'site' ? ' tc-site' : ''}`}
-          style={{ flex: '999 1 600px', minWidth: 0, '--razao': mapa.largura && mapa.altura ? mapa.largura / mapa.altura : 1.5 }}
+          className={`tc-palco${modo === 'site' ? ' tc-site' : ''}${usaTiles ? ' tc-leaflet' : ''}`}
+          style={{ flex: '999 1 600px', minWidth: 0, '--razao': razao }}
         >
+          {usaTiles ? (
+            <Suspense fallback={<div className="mapa-leaflet-raiz" style={{ '--razao': razao }} />}>
+              <MapaLeaflet
+                ref={mapaRef}
+                meta={meta}
+                className="mapa-publico"
+                marcadores={marcadoresLeaflet}
+                aoClicarMarcador={escolher}
+                extras={botaoTelaCheia}
+                rotuloMapaInteiro={t.voltarMapa}
+              />
+            </Suspense>
+          ) : (
           <MapaInterativo
             // No modo "tela cheia do site" com o aparelho em pé, o mapa é girado em 90° (a conta do toque acompanha)
             rotacao={modo === 'site' && emPe ? 90 : 0}
-            extras={
-              <button
-                type="button"
-                className="mapa-tela-cheia"
-                onClick={alternar}
-                aria-pressed={modo !== 'normal'}
-                aria-label={modo === 'normal' ? t.telaCheia : t.sairTelaCheia}
-                title={modo === 'normal' ? t.telaCheia : t.sairTelaCheia}
-              >
-                {modo === 'normal' ? <IconeExpandir size={20} /> : <IconeRecolher size={20} />}
-                <span>{modo === 'normal' ? t.telaCheia : t.sairTelaCheia}</span>
-              </button>
-            }
+            extras={botaoTelaCheia}
             className="mapa-publico"
             ref={mapaRef}
             src={urlImagem(mapa.imagem_path)}
@@ -242,6 +287,7 @@ export default function MapaCidade() {
               })
             }
           />
+          )}
         </div>
 
         <aside className="cartao" style={{ flex: '1 1 280px', minWidth: 0, padding: 16 }}>

@@ -1968,7 +1968,7 @@ textarea {
 /* ---------- Mapa público no celular (só .mapa-publico; o editor do painel não muda) ---------- */
 @media (max-width: 599px) {
   /* Logo com pelo menos 36 px, mesmo que o tamanho salvo seja menor (o valor do banco não muda) */
-  .mapa-publico .marcador:not(.marcador-area) {
+  .mapa-publico:not(.mapa-leaflet-raiz) .marcador:not(.marcador-area) {
     width: max(var(--tam), 36px) !important;
   }
   /* Botões + e − embaixo à direita, para não cobrir os marcadores do alto do mapa */
@@ -2112,4 +2112,121 @@ textarea {
 /* A ficha do local fica por cima da tela cheia do site (que usa z-index 9000) */
 .modal-fundo.sobre-tela-cheia {
   z-index: 9500;
+}
+
+/* ---------- Mapa Leaflet (src/components/MapaLeaflet.jsx) ---------- */
+.mapa-leaflet-raiz {
+  --larg-mapa: 320px; /* largura do mapa inteiro na tela; o componente atualiza ao dar zoom */
+  position: relative;
+  z-index: 0;
+  isolation: isolate; /* os z-index internos do Leaflet não passam por cima da ficha, do menu e de outros blocos */
+  width: 100%;
+  aspect-ratio: var(--razao);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 14px 40px rgba(26, 95, 180, 0.18);
+  background: #298fd3;
+}
+.mapa-leaflet {
+  width: 100%;
+  height: 100%;
+  background: #298fd3;
+  font-family: Nunito, system-ui, sans-serif;
+  outline: none;
+}
+.mapa-leaflet,
+.mapa-leaflet * {
+  -webkit-touch-callout: none; /* sem menu de toque longo no celular */
+}
+/* Marcador: o Leaflet posiciona um quadradinho de tamanho zero; o botão fica centralizado nele */
+.marcador-leaflet {
+  background: none;
+  border: 0;
+}
+.mapa-leaflet .marcador {
+  width: calc(var(--tam) * var(--larg-mapa));
+}
+.mapa-leaflet-raiz .mapa-inteiro-botao,
+.mapa-leaflet-raiz .mapa-tela-cheia {
+  z-index: 1000;
+}
+/* Controle de zoom: botões grandes para o dedo */
+.mapa-leaflet.leaflet-container .leaflet-bottom.leaflet-right .leaflet-control-zoom {
+  border: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  margin: 0 12px 12px 0;
+}
+.mapa-leaflet.leaflet-container .leaflet-bar.leaflet-control-zoom a {
+  width: 46px;
+  height: 46px;
+  line-height: 46px;
+  font: 800 24px Nunito, sans-serif;
+  color: var(--azul);
+}
+.mapa-leaflet.leaflet-container .leaflet-bar.leaflet-control-zoom a.leaflet-disabled {
+  color: #9fb3cc;
+}
+
+/* Mapa público no celular: logo com pelo menos 36 px e área invisível com 44 px de toque */
+@media (max-width: 599px) {
+  .mapa-leaflet-raiz.mapa-publico .marcador:not(.marcador-area) {
+    width: max(calc(var(--tam) * var(--larg-mapa)), 36px);
+  }
+}
+@media (max-width: 599px), (pointer: coarse) {
+  .mapa-leaflet-raiz.mapa-publico .marcador-area::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+  }
+}
+
+/* Tela cheia com Leaflet: o mapa preenche a tela (o Leaflet mostra qualquer proporção), sem girar */
+.tc-palco:fullscreen .mapa-leaflet-raiz {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  border-radius: 0;
+  box-shadow: none;
+}
+.tc-palco:-webkit-full-screen .mapa-leaflet-raiz {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  border-radius: 0;
+  box-shadow: none;
+}
+.tc-palco.tc-site .mapa-leaflet-raiz {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  border-radius: 0;
+  box-shadow: none;
+}
+@media (orientation: portrait) {
+  .tc-palco.tc-site.tc-leaflet {
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    transform: none;
+    --fw: 100vw;
+    --fh: 100vh;
+  }
+}
+@supports (height: 100dvh) {
+  @media (orientation: portrait) {
+    .tc-palco.tc-site.tc-leaflet {
+      width: 100vw;
+      height: 100dvh;
+      --fw: 100vw;
+      --fh: 100dvh;
+    }
+  }
 }
