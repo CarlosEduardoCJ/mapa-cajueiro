@@ -1,7 +1,7 @@
 // Ficha de um local: logo, fotos, descrição, serviços, contatos e como chegar.
 // Usada tanto no modal do mapa quanto na página própria do local.
 import { Link } from 'react-router-dom';
-import { IconeLocal, IconeSeta, IconeWhatsApp } from './Icones.jsx';
+import { IconeInstagram, IconeLocal, IconeSeta, IconeWhatsApp } from './Icones.jsx';
 import { useIdioma } from '../i18n/IdiomaContext.jsx';
 import { urlImagem } from '../lib/supabase.js';
 import { nomeCategoria } from '../lib/locais.js';
@@ -92,6 +92,11 @@ export default function FichaLocal({ detalhe, mostrarVerNoMapa = false }) {
             {t.waNaoCadastrado}
           </span>
         )}
+        {instagram ? (
+          <a href={instagram} target="_blank" rel="noopener" className="btn btn-instagram">
+            <IconeInstagram size={20} /> Instagram
+          </a>
+        ) : null}
         {temCoordenadas ? (
           <>
             <a href={linkGoogleMaps(local.latitude, local.longitude)} target="_blank" rel="noopener" className="btn btn-azul">

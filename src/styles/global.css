@@ -1945,3 +1945,13 @@ textarea {
   border-color: var(--amarelo);
   border-style: solid;
 }
+
+/* Botão do Instagram: gradiente da marca; tamanho e formato vêm de ".btn" */
+.btn-instagram {
+  background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af);
+  color: #fff;
+}
+.btn-instagram:hover {
+  color: #fff;
+  filter: brightness(1.08);
+}
