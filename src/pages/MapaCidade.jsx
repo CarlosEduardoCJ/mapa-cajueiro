@@ -186,6 +186,7 @@ export default function MapaCidade() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'flex-start' }}>
         <div style={{ flex: '999 1 600px', minWidth: 0 }}>
           <MapaInterativo
+            className="mapa-publico"
             ref={mapaRef}
             src={urlImagem(mapa.imagem_path)}
             alt={t.mapaTitulo}
@@ -205,7 +206,8 @@ export default function MapaCidade() {
                     tabIndex={casa ? 0 : -1}
                     onClick={() => escolher(m.local.id)}
                     title={m.local.nome}
-                    style={{ left: `${m.x * 100}%`, top: `${m.y * 100}%`, width: `${m.tamanho * 100}%` }}
+                    // --tam guarda o tamanho salvo no banco; no celular o CSS aplica um mínimo sem mudar esse valor
+                    style={{ left: `${m.x * 100}%`, top: `${m.y * 100}%`, width: `${m.tamanho * 100}%`, '--tam': `${m.tamanho * 100}%` }}
                   />
                 );
               })

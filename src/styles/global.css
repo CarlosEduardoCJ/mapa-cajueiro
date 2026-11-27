@@ -1964,3 +1964,29 @@ textarea {
   color: #dce9fa;
   font-size: 14px;
 }
+
+/* ---------- Mapa público no celular (só .mapa-publico; o editor do painel não muda) ---------- */
+@media (max-width: 599px) {
+  /* Logo com pelo menos 36 px, mesmo que o tamanho salvo seja menor (o valor do banco não muda) */
+  .mapa-publico .marcador:not(.marcador-area) {
+    width: max(var(--tam), 36px) !important;
+  }
+  /* Botões + e − embaixo à direita, para não cobrir os marcadores do alto do mapa */
+  .mapa-publico .mapa-controles {
+    top: auto;
+    bottom: 12px;
+  }
+}
+/* Área invisível: continua invisível, mas a área de toque tem pelo menos 44 px (celular e telas de toque) */
+@media (max-width: 599px), (pointer: coarse) {
+  .mapa-publico .marcador-area::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+  }
+}

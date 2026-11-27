@@ -34,7 +34,7 @@ function distancia(a, b) {
 }
 
 const MapaInterativo = forwardRef(function MapaInterativo(
-  { src, alt = '', proporcao = '3 / 2', marcadores, onPontoClique },
+  { src, alt = '', proporcao = '3 / 2', marcadores, onPontoClique, className = '' },
   ref,
 ) {
   const contRef = useRef(null); // área visível do mapa (com as bordas)
@@ -251,7 +251,7 @@ const MapaInterativo = forwardRef(function MapaInterativo(
   return (
     <div
       ref={contRef}
-      className="mapa-area"
+      className={`mapa-area${className ? ` ${className}` : ''}`}
       style={{ aspectRatio: proporcao }}
       onPointerDown={aoPressionar}
       onPointerMove={aoMover}
