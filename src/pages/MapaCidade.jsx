@@ -1,11 +1,12 @@
 // Mapa da cidade (público): mapa ilustrado com zoom e arrasto, marcadores lidos do banco.
 // Clicar num logo aproxima, escurece o fundo e abre a ficha. Ao fechar, volta ao enquadramento de antes.
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import FichaLocal from '../components/FichaLocal.jsx';
 import MapaInterativo from '../components/MapaInterativo.jsx';
 import MarcadorMapa from '../components/MarcadorMapa.jsx';
-import { IconeFechar } from '../components/Icones.jsx';
+import { IconeExpandir, IconeFechar, IconeRecolher } from '../components/Icones.jsx';
 import { useIdioma } from '../i18n/IdiomaContext.jsx';
 import { supabase, urlImagem } from '../lib/supabase.js';
 import {
@@ -17,6 +18,7 @@ import {
   normalizarTexto,
 } from '../lib/locais.js';
 import { useTitulo } from '../lib/seo.js';
+import { useTelaCheia } from '../lib/telaCheia.js';
 import { inicial } from '../lib/utils.js';
 
 const ESCALA_AO_CLICAR = 2.4; // quanto o mapa aproxima ao clicar num logo
@@ -38,6 +40,14 @@ export default function MapaCidade() {
   // Referência para o mapa (zoom programático) e o enquadramento de antes do clique
   const mapaRef = useRef(null);
   const vistaAntesRef = useRef(null);
+
+  // Tela cheia: o "palco" é o contêiner do mapa (e, no modo nativo, também da ficha do local)
+  const palcoRef = useRef(null);
+  const { modo, emPe, alternar } = useTelaCheia(palcoRef);
+  // Ao entrar ou sair da tela cheia o tamanho do mapa muda: volta ao mapa inteiro para não ficar desenquadrado
+  useEffect(() => {
+    mapaRef.current?.mapaInteiro?.();
+  }, [modo]);
 
   // Filtros: grupo (ex.: hospedagem) e texto da busca
   const [grupo, setGrupo] = useState(() => params.get('grupo') || 'todos');
@@ -184,8 +194,27 @@ export default function MapaCidade() {
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'flex-start' }}>
-        <div style={{ flex: '999 1 600px', minWidth: 0 }}>
+        <div
+          ref={palcoRef}
+          className={`tc-palco${modo === 'site' ? ' tc-site' : ''}`}
+          style={{ flex: '999 1 600px', minWidth: 0, '--razao': mapa.largura && mapa.altura ? mapa.largura / mapa.altura : 1.5 }}
+        >
           <MapaInterativo
+            // No modo "tela cheia do site" com o aparelho em pé, o mapa é girado em 90° (a conta do toque acompanha)
+            rotacao={modo === 'site' && emPe ? 90 : 0}
+            extras={
+              <button
+                type="button"
+                className="mapa-tela-cheia"
+                onClick={alternar}
+                aria-pressed={modo !== 'normal'}
+                aria-label={modo === 'normal' ? t.telaCheia : t.sairTelaCheia}
+                title={modo === 'normal' ? t.telaCheia : t.sairTelaCheia}
+              >
+                {modo === 'normal' ? <IconeExpandir size={20} /> : <IconeRecolher size={20} />}
+                <span>{modo === 'normal' ? t.telaCheia : t.sairTelaCheia}</span>
+              </button>
+            }
             className="mapa-publico"
             ref={mapaRef}
             src={urlImagem(mapa.imagem_path)}
@@ -248,16 +277,22 @@ export default function MapaCidade() {
         </aside>
       </div>
 
-      {modal && detalhe ? <ModalLocal detalhe={detalhe} aoFechar={fechar} /> : null}
+      {modal && detalhe
+        ? createPortal(
+            <ModalLocal detalhe={detalhe} aoFechar={fechar} sobreTelaCheia={modo === 'site'} />,
+            // Em tela cheia nativa só o que está dentro do elemento aparece, por isso a ficha vai para dentro do palco
+            modo === 'nativo' && palcoRef.current ? palcoRef.current : document.body,
+          )
+        : null}
     </section>
   );
 }
 
 // Janela central com a ficha do local (no celular ocupa quase tudo)
-function ModalLocal({ detalhe, aoFechar }) {
+function ModalLocal({ detalhe, aoFechar, sobreTelaCheia = false }) {
   const { t } = useIdioma();
   return (
-    <div className="modal-fundo" role="presentation">
+    <div className={`modal-fundo${sobreTelaCheia ? ' sobre-tela-cheia' : ''}`} role="presentation">
       <button className="modal-fundo-botao" onClick={aoFechar} aria-label={t.fechar} />
       <div className="modal" role="dialog" aria-modal="true" aria-label={detalhe.local.nome}>
         <button className="modal-fechar" onClick={aoFechar} aria-label={t.fechar}>

@@ -1990,3 +1990,126 @@ textarea {
     border-radius: 50%;
   }
 }
+
+/* ---------- Tela cheia do mapa público ---------- */
+/* Botão "Tela cheia" no canto superior direito do mapa */
+.mapa-tela-cheia {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 0;
+  background: #fff;
+  color: var(--azul);
+  font: 800 15px Nunito, sans-serif;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+/* No celular só o ícone, para não cobrir os marcadores do canto */
+@media (max-width: 599px) {
+  .mapa-tela-cheia {
+    width: 46px;
+    padding: 0;
+    justify-content: center;
+  }
+  .mapa-tela-cheia span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+}
+/* No computador os botões + e − descem para ficar abaixo do "Tela cheia" */
+@media (min-width: 600px) {
+  .mapa-publico .mapa-controles {
+    top: 70px;
+  }
+}
+
+/* Mapa cabe inteiro na tela (sem esticar a imagem): largura = o menor entre a largura da tela e a altura x proporção */
+.tc-palco {
+  --fw: 100vw;
+  --fh: 100vh;
+}
+@supports (height: 100dvh) {
+  .tc-palco {
+    --fh: 100dvh;
+  }
+}
+/* 1) Tela cheia nativa (computador e Android) */
+.tc-palco:fullscreen {
+  background: #0b1d36;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tc-palco:-webkit-full-screen {
+  background: #0b1d36;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tc-palco:fullscreen .mapa-area {
+  width: min(var(--fw), calc(var(--fh) * var(--razao)));
+  border-radius: 0;
+  box-shadow: none;
+}
+.tc-palco:-webkit-full-screen .mapa-area {
+  width: min(var(--fw), calc(var(--fh) * var(--razao)));
+  border-radius: 0;
+  box-shadow: none;
+}
+/* 2) "Tela cheia do site" (iPhone): o mapa cobre a tela por cima da página, com fundo escuro */
+.tc-palco.tc-site {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9000;
+  background: #0b1d36;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+@supports (height: 100dvh) {
+  .tc-palco.tc-site {
+    height: 100dvh;
+  }
+}
+.tc-palco.tc-site .mapa-area {
+  width: min(var(--fw), calc(var(--fh) * var(--razao)));
+  border-radius: 0;
+  box-shadow: none;
+}
+/* Aparelho em pé: gira o mapa em 90° para ficar na horizontal e ainda ocupar a tela inteira */
+@media (orientation: portrait) {
+  .tc-palco.tc-site {
+    left: 100vw;
+    width: 100vh;
+    height: 100vw;
+    transform-origin: 0 0;
+    transform: rotate(90deg);
+    --fw: 100vh;
+    --fh: 100vw;
+  }
+}
+@supports (height: 100dvh) {
+  @media (orientation: portrait) {
+    .tc-palco.tc-site {
+      width: 100dvh;
+      --fw: 100dvh;
+    }
+  }
+}
+/* A ficha do local fica por cima da tela cheia do site (que usa z-index 9000) */
+.modal-fundo.sobre-tela-cheia {
+  z-index: 9500;
+}

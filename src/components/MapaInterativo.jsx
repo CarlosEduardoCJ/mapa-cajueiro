@@ -34,7 +34,7 @@ function distancia(a, b) {
 }
 
 const MapaInterativo = forwardRef(function MapaInterativo(
-  { src, alt = '', proporcao = '3 / 2', marcadores, onPontoClique, className = '' },
+  { src, alt = '', proporcao = '3 / 2', marcadores, onPontoClique, className = '', rotacao = 0, extras = null },
   ref,
 ) {
   const contRef = useRef(null); // área visível do mapa (com as bordas)
@@ -44,7 +44,10 @@ const MapaInterativo = forwardRef(function MapaInterativo(
   const gestoRef = useRef(null); // o que está sendo feito: arrastar ou pinçar
   const arrastouRef = useRef(false); // true se houve arrasto (então o clique em logo é ignorado)
   const ultimoToqueRef = useRef(null); // para detectar toque duplo no celular
+  const duploToqueEmRef = useRef(0); // quando o toque duplo (pelo dedo) aproximou, para não aproximar de novo pelo evento dblclick
   const escalaAnteriorRef = useRef(1);
+  const rotacaoRef = useRef(rotacao); // quanto o mapa está girado na tela (modo "tela cheia do site" no celular em pé)
+  rotacaoRef.current = rotacao;
   const [escalaAtual, setEscalaAtual] = useState(1); // só para desativar os botões + e −
 
   // Pega largura e altura reais da área do mapa
@@ -73,8 +76,26 @@ const MapaInterativo = forwardRef(function MapaInterativo(
 
   // Ponto dentro da área do mapa, em pixels (a partir do canto superior esquerdo)
   function pontoLocal(clientX, clientY) {
-    const r = contRef.current.getBoundingClientRect();
-    return { x: clientX - r.left, y: clientY - r.top };
+    const el = contRef.current;
+    const r = el.getBoundingClientRect();
+    // vetor do centro do mapa até o ponto, na tela
+    const vx = clientX - (r.left + r.width / 2);
+    const vy = clientY - (r.top + r.height / 2);
+    // desfaz a rotação para obter o vetor no sistema do próprio mapa
+    let lx = vx;
+    let ly = vy;
+    const rot = ((rotacaoRef.current % 360) + 360) % 360;
+    if (rot === 90) {
+      lx = vy;
+      ly = -vx;
+    } else if (rot === 180) {
+      lx = -vx;
+      ly = -vy;
+    } else if (rot === 270) {
+      lx = -vy;
+      ly = vx;
+    }
+    return { x: el.clientWidth / 2 + lx, y: el.clientHeight / 2 + ly };
   }
 
   // Ponto em coordenadas da IMAGEM (0 a 1), levando em conta o zoom atual
@@ -145,7 +166,7 @@ const MapaInterativo = forwardRef(function MapaInterativo(
   }, []);
 
   function iniciarArrasto(x, y) {
-    gestoRef.current = { tipo: 'arrasto', x0: x, y0: y, v0: { ...vistaRef.current }, moveu: false };
+    gestoRef.current = { tipo: 'arrasto', p0: pontoLocal(x, y), v0: { ...vistaRef.current }, moveu: false };
   }
 
   // Dois dedos: guarda o ponto do meio para o zoom acontecer ali
@@ -165,7 +186,12 @@ const MapaInterativo = forwardRef(function MapaInterativo(
 
   function aoPressionar(e) {
     // Pressionar em um marcador ou em um botão (+, −, ver inteiro) não inicia arrasto do mapa
-    if (e.target.closest('button')) return;
+    if (e.target.closest('button')) {
+      // Um novo toque num botão ou marcador começa uma ação nova: o arrasto anterior já acabou.
+      // Sem isto, o primeiro toque num logo depois de arrastar o mapa era ignorado.
+      arrastouRef.current = false;
+      return;
+    }
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     ponteiros.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     capturarPonteiro(contRef.current, e.pointerId);
@@ -184,8 +210,9 @@ const MapaInterativo = forwardRef(function MapaInterativo(
     if (!g) return;
 
     if (g.tipo === 'arrasto') {
-      const dx = e.clientX - g.x0;
-      const dy = e.clientY - g.y0;
+      const p = pontoLocal(e.clientX, e.clientY);
+      const dx = p.x - g.p0.x;
+      const dy = p.y - g.p0.y;
       if (!g.moveu && Math.abs(dx) + Math.abs(dy) < LIMITE_ARRASTO_PX) return;
       g.moveu = true;
       arrastouRef.current = true;
@@ -218,6 +245,7 @@ const MapaInterativo = forwardRef(function MapaInterativo(
         if (anterior && agora - anterior.t < 350 && distancia(anterior, { x: e.clientX, y: e.clientY }) < 30) {
           const p = pontoLocal(e.clientX, e.clientY);
           zoomEm(p.x, p.y, 2, true);
+          duploToqueEmRef.current = Date.now();
           ultimoToqueRef.current = null;
         } else {
           ultimoToqueRef.current = { t: agora, x: e.clientX, y: e.clientY };
@@ -229,6 +257,8 @@ const MapaInterativo = forwardRef(function MapaInterativo(
   // Duplo clique com mouse aproxima no ponto clicado
   function aoDuploClique(e) {
     if (e.target.closest('button')) return;
+    // O navegador do celular também dispara dblclick depois de um toque duplo: sem isto o zoom acontecia duas vezes (4x)
+    if (Date.now() - duploToqueEmRef.current < 700) return;
     const p = pontoLocal(e.clientX, e.clientY);
     zoomEm(p.x, p.y, 2, true);
   }
@@ -236,6 +266,7 @@ const MapaInterativo = forwardRef(function MapaInterativo(
   // Se o usuário acabou de arrastar, o "clique" que vem depois é ignorado
   function aoClicarCapturado(e) {
     if (arrastouRef.current) {
+      arrastouRef.current = false; // o clique que sobrou do arrasto é descartado uma vez só
       e.stopPropagation();
       e.preventDefault();
     }
@@ -268,6 +299,8 @@ const MapaInterativo = forwardRef(function MapaInterativo(
         <img src={src} alt={alt} draggable={false} />
         {marcadores ? marcadores({ paraNormalizado: pontoNormalizado }) : null}
       </div>
+
+      {extras}
 
       <div className="mapa-controles">
         <button type="button" aria-label="Aproximar" onClick={() => zoomBotao(1.6)} disabled={escalaAtual >= ESCALA_MAX}>+</button>
