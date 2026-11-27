@@ -1955,3 +1955,12 @@ textarea {
   color: #fff;
   filter: brightness(1.08);
 }
+
+/* Crédito no fim do rodapé: pequeno e centralizado, igual ao texto secundário (.rodape small) */
+.rodape-credito {
+  margin: 0;
+  padding: 0 20px 20px;
+  text-align: center;
+  color: #dce9fa;
+  font-size: 14px;
+}

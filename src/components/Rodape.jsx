@@ -49,6 +49,7 @@ export default function Rodape() {
           </Link>
         </div>
       </div>
+      <p className="rodape-credito">{t.desenvolvidoPor}</p>
     </footer>
   );
 }
