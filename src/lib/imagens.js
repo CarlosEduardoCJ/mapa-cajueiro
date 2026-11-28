@@ -5,13 +5,14 @@ import { supabase, BUCKET_MIDIA } from './supabase.js';
 const TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/webp'];
 const LIMITE_BYTES = 5 * 1024 * 1024; // 5 MB, igual ao limite do bucket
 
-// Reduz para no máximo 1600 px e converte para WebP
-export async function comprimirImagem(arquivo) {
+// Reduz para no máximo 1600 px e converte para WebP.
+// Com { semLimiteDeLado: true } (imagem do mapa) o tamanho em pixels NÃO é reduzido: só o peso é ajustado para caber em 5 MB.
+export async function comprimirImagem(arquivo, { semLimiteDeLado = false } = {}) {
   if (!TIPOS_PERMITIDOS.includes(arquivo.type)) {
     throw new Error('Use uma imagem JPG, PNG ou WebP.');
   }
   const comprimida = await imageCompression(arquivo, {
-    maxWidthOrHeight: 1600,
+    ...(semLimiteDeLado ? { maxSizeMB: 4.8 } : { maxWidthOrHeight: 1600 }),
     fileType: 'image/webp',
     initialQuality: 0.82,
     useWebWorker: true,
