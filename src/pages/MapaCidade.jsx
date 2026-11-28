@@ -122,6 +122,21 @@ export default function MapaCidade() {
   const filtroAtivo = grupo !== 'todos' || termo !== '';
   const visiveis = marcadores.filter((m) => passaFiltro(m.local));
 
+  // Busca com um único resultado: aproxima o mapa até ele (sem abrir a ficha).
+  // Quando a busca é apagada, volta ao mapa inteiro.
+  const buscaAproximouRef = useRef(false);
+  useEffect(() => {
+    if (visiveis.length === 1 && filtroAtivo) {
+      const unico = visiveis[0];
+      mapaRef.current?.focarEm(unico.x, unico.y, ESCALA_AO_CLICAR);
+      buscaAproximouRef.current = true;
+    } else if (buscaAproximouRef.current) {
+      mapaRef.current?.mapaInteiro?.();
+      buscaAproximouRef.current = false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busca, grupo, marcadores]);
+
   // Clique num logo: guarda o enquadramento atual, aproxima e abre a ficha
   async function escolher(localId) {
     const marcador = marcadores.find((m) => m.local.id === localId);
